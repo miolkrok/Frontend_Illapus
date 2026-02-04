@@ -1,0 +1,4 @@
+* text=auto
+*.java text
+*.kt text
+*.xml text

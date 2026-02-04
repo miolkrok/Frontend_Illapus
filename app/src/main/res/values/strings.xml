@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Illapus</string>
+
+    <!-- URLs de API -->
+    <string name="api_url_emulator">http://10.0.2.2:8080/</string>
+    <string name="api_url_device">http://192.168.100.5:8888/</string>
+    <string name="api_url_production">https://api.illapus.com/</string>
+
+    <!-- Indica qué URL usar (emulator, device o production) -->
+    <string name="api_url_type">device</string>
+</resources>
