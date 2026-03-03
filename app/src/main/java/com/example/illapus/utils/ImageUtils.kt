@@ -10,6 +10,7 @@ import java.io.InputStream
 
 object ImageUtils {
 
+
     /**
      * Convierte una cadena Base64 a Bitmap
      */
@@ -41,7 +42,7 @@ object ImageUtils {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, byteArrayOutputStream)
             val byteArray = byteArrayOutputStream.toByteArray()
 
-            Base64.encodeToString(byteArray, Base64.DEFAULT)
+            Base64.encodeToString(byteArray, Base64.NO_WRAP)
         } catch (e: Exception) {
             e.printStackTrace()
             null
