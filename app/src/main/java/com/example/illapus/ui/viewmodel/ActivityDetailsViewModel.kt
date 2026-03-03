@@ -123,7 +123,7 @@ class ActivityDetailsViewModel : BaseViewModel() {
         // Ordenar imágenes: principal primero
         val sortedImages = activity.galeria
             .sortedByDescending { it.isPrimaryImage }
-            .map { it.imageBinary }
+            .map { it.displayImage ?: ""  }
 
         // Extraer nombres de servicios
         val services = activity.services.map { it.serviceName }

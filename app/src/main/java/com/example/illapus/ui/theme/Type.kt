@@ -8,7 +8,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.illapus.R
 
-val Averil = FontFamily(Font(R.font.averil))
+val Averil = FontFamily.SansSerif//FontFamily(Font(R.font.averil))
 
 val AppTypography = Typography(
     displayLarge = TextStyle(

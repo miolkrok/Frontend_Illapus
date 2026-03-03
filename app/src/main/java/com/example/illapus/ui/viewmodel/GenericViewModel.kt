@@ -158,7 +158,7 @@ class GenericViewModel : ViewModel() {
                 nombreArchivo = galeriaItem.fileName,
                 tipoContenido = galeriaItem.contentType,
                 esImagenPrincipal = galeriaItem.isPrimaryImage,
-                base64Image = galeriaItem.imageBinary
+                base64Image = galeriaItem.displayImage
             )
         }
         _localImages.value = localImages
@@ -167,6 +167,7 @@ class GenericViewModel : ViewModel() {
         _originalGalleryResponses.value = details.galeria.map {
             GaleriaResponse(
                 id = it.id,
+                urlFoto = it.urlFoto,
                 imagenBinaria = it.imageBinary,
                 nombreArchivo = it.fileName,
                 tipoContenido = it.contentType,

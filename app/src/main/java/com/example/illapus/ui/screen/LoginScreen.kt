@@ -46,6 +46,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.illapus.ui.viewmodel.LoginViewModel
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.example.illapus.R
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun LoginScreen(
@@ -92,10 +98,26 @@ fun LoginScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(1.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+                Text(
+                    text = "ILLAPUS",
+                    style = MaterialTheme.typography.headlineMedium,
+                    textAlign = TextAlign.Center,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 15.dp)
+                )
+                // Logo
+                Image(
+                    painter = painterResource(id = R.drawable.illapus_06),
+                    contentDescription = "Logo Illapus",
+                    modifier = Modifier
+                        .size(150.dp)
+                        .padding(bottom = 1.dp)
+                )
                 // Título
                 Text(
                     text = "Iniciar Sesión",

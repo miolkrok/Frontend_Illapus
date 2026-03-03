@@ -55,8 +55,10 @@ data class GalleryImage(
     val id: Int,
     @SerializedName("actividadId")
     val activityId: Int,
+    @SerializedName("urlFoto")
+    val urlFoto: String?,
     @SerializedName("imagenBinaria")
-    val imageBinary: String,
+    val imageBinary: String?,
     @SerializedName("nombreArchivo")
     val fileName: String,
     @SerializedName("tipoContenido")
@@ -65,7 +67,12 @@ data class GalleryImage(
     val fileSize: Long,
     @SerializedName("esImagenPrincipal")
     val isPrimaryImage: Boolean
-)
+){
+    val displayImage: String?
+        get() = if (!urlFoto.isNullOrEmpty())
+            urlFoto else imageBinary
+}
+
 
 /**
  * Modelo para los servicios incluidos en la actividad

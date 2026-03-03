@@ -49,6 +49,7 @@ data class ActivityResponse(
 
 data class GaleriaItem(
     @SerializedName("imagenBinaria") val imagenBinaria: String?, // Base64 encoded image
+    @SerializedName("urlFoto") val urlFoto: String? = null,
     @SerializedName("nombreArchivo") val nombreArchivo: String,
     @SerializedName("tipoContenido") val tipoContenido: String,
     @SerializedName("tamanoArchivo") val tamanoArchivo: Long,
@@ -57,6 +58,7 @@ data class GaleriaItem(
 
 data class GaleriaResponse(
     @SerializedName("id") val id: Int,
+    @SerializedName("urlFoto") val urlFoto: String?,
     @SerializedName("imagenBinaria") val imagenBinaria: String?,
     @SerializedName("nombreArchivo") val nombreArchivo: String,
     @SerializedName("tipoContenido") val tipoContenido: String,

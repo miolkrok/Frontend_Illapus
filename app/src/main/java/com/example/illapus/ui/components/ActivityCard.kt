@@ -68,7 +68,7 @@ fun ActivityCard(
                 if (activity.galeria.isNotEmpty()) {
                     val primaryImage = activity.galeria.find { it.isPrimaryImage } ?: activity.galeria.first()
                     AdaptiveImage(
-                        imageData = primaryImage.imageBinary,
+                        imageData = primaryImage.displayImage,
                         contentDescription = activity.title,
                         modifier = Modifier
                             .fillMaxWidth()
