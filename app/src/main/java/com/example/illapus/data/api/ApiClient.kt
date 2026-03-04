@@ -25,6 +25,8 @@ object ApiClient {
     private var _reserveService: ReserveApiService? = null
     private var _searchService: SearchService? = null
 
+    private var _opinionService: OpinionApiService? = null
+
     val authApiService: AuthApiService
         get() {
             if (_authApiService == null) {
@@ -204,7 +206,16 @@ object ApiClient {
         _activityService = null
         _reserveService = null
         _searchService = null
+        _opinionService = null
 
         Log.d("ApiClient", "ApiClient reinicializado con URL: $baseUrl")
     }
+
+    val opinionService: OpinionApiService
+        get() {
+            if (_opinionService == null) {
+                _opinionService = retrofit.create(OpinionApiService::class.java)
+            }
+            return _opinionService!!
+        }
 }

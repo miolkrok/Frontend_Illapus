@@ -33,7 +33,8 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReservationsScreen(
-    viewModel: ReservationsViewModel = viewModel()
+    viewModel: ReservationsViewModel = viewModel(),
+    onNavigateToComments: ((actividadId: Int) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -81,7 +82,8 @@ fun ReservationsScreen(
                             onDeleteReservation = { reservationId ->
                                 viewModel.deleteReservation(reservationId)
                             },
-                            isDeletingReservation = uiState.isDeletingReservation
+                            isDeletingReservation = uiState.isDeletingReservation,
+                            onNavigateToComments = onNavigateToComments
                         )
                     }
                 }
@@ -177,21 +179,28 @@ private fun EmptyContent() {
 private fun ReservationsList(
     reservations: List<ReserveCreationResponse>,
     onDeleteReservation: (Int) -> Unit,
-    isDeletingReservation: Int?
+    isDeletingReservation: Int?,
+    onNavigateToComments: ((Int) -> Unit)? = null
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(reservations) { reservation ->
+        items(reservations, key = { it.id }) { reservation ->
             ReservationCard(
                 reservation = reservation,
                 onDeleteReservation = onDeleteReservation,
-                isDeleting = isDeletingReservation == reservation.id
+                isDeleting = isDeletingReservation == reservation.id,
+                status = reservation.estado,
+                onStatusSelected = {},
+                onOpinar = { actividadId ->
+                    onNavigateToComments?.invoke(actividadId)
+                }
             ) {
                 // StatusChip
                 StatusChip(status = reservation.estado)
+
                 // Detalles de la reserva
                 ReservationDetailRow(
                     icon = Icons.Default.CalendarToday,

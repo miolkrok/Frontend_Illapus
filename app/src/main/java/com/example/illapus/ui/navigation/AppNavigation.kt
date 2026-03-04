@@ -1,5 +1,6 @@
 package com.example.illapus.ui.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.BottomNavigation
@@ -48,6 +49,10 @@ object AppDestinations {
     const val ACTIVITY_DETAILS_PREFIX = "activity_details"
     const val ACTIVITY_DETAILS_ROUTE = "$ACTIVITY_DETAILS_PREFIX/{activityId}"
     const val RESERVATIONS_ROUTE = "reservations"
+
+    //Comentarios de cada viaje.
+    const val COMMENTS_PREFIX = "comments"
+    const val COMMENTS_ROUTE = "$COMMENTS_PREFIX/{activityId}/{activityName}"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,10 +85,11 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
             val showBottomBar = currentRoute != AppDestinations.LOGIN_ROUTE &&
-                               currentRoute != AppDestinations.REGISTER_ROUTE &&
-                               currentRoute != AppDestinations.GENERIC_SCREEN_ROUTE &&
-                               currentRoute != AppDestinations.SPLASH_ROUTE &&
-                               !currentRoute.orEmpty().startsWith(AppDestinations.ACTIVITY_DETAILS_PREFIX)
+                    currentRoute != AppDestinations.REGISTER_ROUTE &&
+                    currentRoute != AppDestinations.GENERIC_SCREEN_ROUTE &&
+                    currentRoute != AppDestinations.SPLASH_ROUTE &&
+                    !currentRoute.orEmpty().startsWith(AppDestinations.ACTIVITY_DETAILS_PREFIX) &&
+                    !currentRoute.orEmpty().startsWith(AppDestinations.COMMENTS_PREFIX)
 
             if (showBottomBar) {
                 NavigationBar(
@@ -97,7 +103,8 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                         NavigationItems.items
                     }
                     itemsToShow.forEach { item ->
-                        val selected = currentDestination?.hierarchy?.any { it.route == item.route } == true
+                        val selected =
+                            currentDestination?.hierarchy?.any { it.route == item.route } == true
                         NavigationBarItem(
                             icon = {
                                 Icon(
@@ -243,7 +250,13 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
             // Pantalla de Reservas
             composable(AppDestinations.RESERVATIONS_ROUTE) {
-                ReservationsScreen()
+                ReservationsScreen(
+                    onNavigateToComments = { actividadId ->
+                        navController.navigate(
+                            "${AppDestinations.COMMENTS_PREFIX}/$actividadId/${Uri.encode("Actividad")}"
+                        )
+                    }
+                )
             }
 
             // Pantalla de Detalles de Actividad
@@ -262,7 +275,37 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     onBackPressed = { navController.popBackStack() },
                     onReservationRequested = {
                         // Implementar la navegación a la pantalla de reserva cuando esté disponible
+                    },
+                    onViewAllComments = { id, name ->
+                        navController.navigate(
+                            "${AppDestinations.COMMENTS_PREFIX}/$id/${Uri.encode(name)}"
+                        )
                     }
+                )
+            }
+
+            // ── NUEVA: Pantalla de Comentarios/Opiniones ──
+            composable(
+                route = AppDestinations.COMMENTS_ROUTE,
+                arguments = listOf(
+                    navArgument("activityId") {
+                        type = NavType.StringType
+                        defaultValue = "default_id"
+                    },
+                    navArgument("activityName") {
+                        type = NavType.StringType
+                        defaultValue = "Actividad"
+                    }
+                )
+            ) { backStackEntry ->
+                val activityId = backStackEntry.arguments?.getString("activityId") ?: "default_id"
+                val activityName =
+                    backStackEntry.arguments?.getString("activityName") ?: "Actividad"
+
+                CommentsScreen(
+                    activityId = activityId,
+                    activityName = activityName,
+                    onBackPressed = { navController.popBackStack() }
                 )
             }
 

@@ -1,5 +1,8 @@
 package com.example.illapus.ui.screen
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,23 +14,31 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.illapus.data.model.OpinionResponse
 import com.example.illapus.ui.components.GenericMap
 import com.example.illapus.ui.components.ImageCarousel
 import com.example.illapus.ui.components.StarRatingBar
 import com.example.illapus.ui.viewmodel.ActivityDetailsViewModel
+import com.example.illapus.ui.viewmodel.OpinionViewModel
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -40,11 +51,17 @@ fun ActivityDetailsScreen(
     activityId: String,
     onBackPressed: () -> Unit,
     onReservationRequested: () -> Unit,
-    viewModel: ActivityDetailsViewModel = viewModel()
+    onViewAllComments: ((String, String) -> Unit)? = null,
+    viewModel: ActivityDetailsViewModel = viewModel(),
+    opinionViewModel: OpinionViewModel = viewModel()
 ) {
-    // Cargamos los detalles de la actividad cuando se compone la pantalla
+    // Cargar detalles y opiniones
     LaunchedEffect(activityId) {
         viewModel.loadActivityDetails(activityId)
+        val id = activityId.toIntOrNull()
+        if (id != null) {
+            opinionViewModel.loadOpiniones(id)
+        }
     }
 
     val activityDetails by viewModel.activityDetails.collectAsState()
@@ -59,9 +76,37 @@ fun ActivityDetailsScreen(
     val isCreatingReservation by viewModel.isCreatingReservation.collectAsState()
     val reservationResult by viewModel.reservationResult.collectAsState()
 
+    // Estado de opiniones
+    val opinionUiState by opinionViewModel.uiState.collectAsState()
+
+    // Estado para el flujo de pago con comprobante
+    var createdReservationId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var showPaymentSheet by rememberSaveable { mutableStateOf(false) }
+    var receiptUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var receiptName by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        receiptUri = uri
+        receiptName = uri?.lastPathSegment
+    }
+
+    val pickFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        receiptUri = uri
+        receiptName = uri?.lastPathSegment
+    }
+
     val bottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
+
+    val paymentSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -73,7 +118,6 @@ fun ActivityDetailsScreen(
                 duration = SnackbarDuration.Long
             )
             viewModel.clearReservationResult()
-            // Navegar después de mostrar el mensaje
             kotlinx.coroutines.delay(1000)
             onReservationRequested()
         }
@@ -119,9 +163,7 @@ fun ActivityDetailsScreen(
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { viewModel.retryLoad() }
-                    ) {
+                    Button(onClick = { viewModel.retryLoad() }) {
                         Text("Reintentar")
                     }
                 }
@@ -134,14 +176,12 @@ fun ActivityDetailsScreen(
                             .verticalScroll(rememberScrollState())
                     ) {
                         Box(modifier = Modifier.fillMaxWidth()) {
-                            // Carrusel de imágenes
                             ImageCarousel(
                                 images = details.images,
                                 onPageChange = { viewModel.updateCurrentImageIndex(it) }
                             )
                         }
 
-                        // Información principal
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -164,9 +204,9 @@ fun ActivityDetailsScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Calificación
+                            // Calificación con promedio real de opiniones
                             StarRatingBar(
-                                rating = details.rating,
+                                rating = opinionUiState.promedioCalificacion.toFloat(),
                                 showRatingValue = true
                             )
 
@@ -217,7 +257,6 @@ fun ActivityDetailsScreen(
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
-
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "Dificultad",
@@ -251,7 +290,6 @@ fun ActivityDetailsScreen(
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
-
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "Disponibilidad",
@@ -288,9 +326,7 @@ fun ActivityDetailsScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
-
                                 Spacer(modifier = Modifier.height(8.dp))
-
                                 details.services.forEach { service ->
                                     Row(
                                         modifier = Modifier.padding(vertical = 2.dp),
@@ -307,7 +343,6 @@ fun ActivityDetailsScreen(
                                         )
                                     }
                                 }
-
                                 Divider(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -315,18 +350,15 @@ fun ActivityDetailsScreen(
                                 )
                             }
 
-                            // Ubicaciones (Salida y Destino)
+                            // Ubicaciones
                             Text(
                                 text = "Ubicaciones",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
-
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Información de ubicaciones
                             Column {
-                                // Punto de salida
                                 Text(
                                     text = "📍 Punto de Salida",
                                     style = MaterialTheme.typography.labelMedium,
@@ -346,7 +378,6 @@ fun ActivityDetailsScreen(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                // Punto de destino
                                 Text(
                                     text = "🎯 Destino",
                                     style = MaterialTheme.typography.labelMedium,
@@ -367,7 +398,7 @@ fun ActivityDetailsScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Mapa con ambas ubicaciones
+                            // Mapa
                             GenericMap(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -387,6 +418,66 @@ fun ActivityDetailsScreen(
                                 showLocationInfo = false,
                                 showCurrentLocationButton = false
                             )
+
+                            // ══════════════════════════════════════════════
+                            // SECCIÓN DE OPINIONES (datos reales del backend)
+                            // ══════════════════════════════════════════════
+                            Divider(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp)
+                            )
+
+                            // Encabezado estilo Airbnb
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = null,
+                                    tint = Color(0xFF222222),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = String.format("%.2f", opinionUiState.promedioCalificacion),
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF222222)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("·", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "${opinionUiState.totalOpiniones} evaluaciones",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF222222)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            if (opinionUiState.isLoading) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                }
+                            } else if (opinionUiState.opiniones.isEmpty()) {
+                                Text(
+                                    text = "Aún no hay opiniones sobre esta actividad",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(vertical = 8.dp)
+                                )
+                            } else {
+                                // Preview de las primeras 2 opiniones
+                                opinionUiState.opiniones.take(2).forEach { opinion ->
+                                    OpinionPreviewItem(opinion = opinion)
+                                }
+                            }
 
                             // Espacio para que el footer no cubra contenido
                             Spacer(modifier = Modifier.height(80.dp))
@@ -414,18 +505,14 @@ fun ActivityDetailsScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
-
                                 Text(
                                     text = details.availability,
                                     style = MaterialTheme.typography.bodyMedium,
                                     textDecoration = TextDecoration.Underline
                                 )
                             }
-
                             Button(
-                                onClick = {
-                                    viewModel.showReservationBottomSheet()
-                                },
+                                onClick = { viewModel.showReservationBottomSheet() },
                                 modifier = Modifier
                                     .height(48.dp)
                                     .wrapContentWidth()
@@ -492,7 +579,6 @@ fun ActivityDetailsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Botón para decrementar
                     IconButton(
                         onClick = { viewModel.decrementGuestCount() },
                         modifier = Modifier
@@ -508,7 +594,6 @@ fun ActivityDetailsScreen(
                         )
                     }
 
-                    // Contador de personas
                     Text(
                         text = "$guestCount",
                         style = MaterialTheme.typography.headlineLarge,
@@ -517,7 +602,6 @@ fun ActivityDetailsScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    // Botón para incrementar
                     IconButton(
                         onClick = { viewModel.incrementGuestCount() },
                         modifier = Modifier
@@ -545,7 +629,6 @@ fun ActivityDetailsScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Botón para seleccionar fecha
                 OutlinedCard(
                     onClick = { viewModel.toggleDatePicker() },
                     modifier = Modifier.fillMaxWidth()
@@ -575,7 +658,7 @@ fun ActivityDetailsScreen(
                     }
                 }
 
-                // DatePicker integrado usando DatePickerDialog
+                // DatePicker
                 if (showDatePicker) {
                     val datePickerState = rememberDatePickerState(
                         initialSelectedDateMillis = selectedDate?.toEpochDay()?.times(24 * 60 * 60 * 1000)
@@ -658,7 +741,15 @@ fun ActivityDetailsScreen(
                     }
 
                     Button(
-                        onClick = { viewModel.createReservation() },
+                        onClick = {
+                            // Primero crea la reserva en el backend
+                            // TODO: Reemplazar con la respuesta real del backend
+                            // viewModel.createReservation() y obtener el ID de la respuesta
+                            createdReservationId = 999 // Quemado por ahora
+
+                            viewModel.hideReservationBottomSheet()
+                            showPaymentSheet = true
+                        },
                         modifier = Modifier.weight(1f),
                         enabled = !isCreatingReservation && selectedDate != null
                     ) {
@@ -677,5 +768,191 @@ fun ActivityDetailsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+
+    // BottomSheet para subir comprobante de pago
+    if (showPaymentSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showPaymentSheet = false },
+            sheetState = paymentSheetState,
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Comprobante de pago",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (receiptUri != null) {
+                    Text(
+                        text = "Archivo seleccionado:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = receiptName ?: "comprobante",
+                        fontWeight = FontWeight.Medium
+                    )
+                    TextButton(onClick = {
+                        receiptUri = null
+                        receiptName = null
+                    }) {
+                        Text("Quitar archivo")
+                    }
+                } else {
+                    Text(
+                        text = "Sube una imagen o PDF del comprobante para finalizar la reserva.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { pickImageLauncher.launch("image/*") },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Imagen")
+                    }
+
+                    OutlinedButton(
+                        onClick = { pickFileLauncher.launch(arrayOf("application/pdf", "image/*")) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("PDF")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            showPaymentSheet = false
+                            receiptUri = null
+                            receiptName = null
+                            viewModel.showReservationBottomSheet()
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Atrás")
+                    }
+
+                    Button(
+                        onClick = {
+                            if (receiptUri == null) {
+                                scope.launch { snackbarHostState.showSnackbar("Adjunta el comprobante.") }
+                                return@Button
+                            }
+
+                            if (createdReservationId == null) {
+                                scope.launch { snackbarHostState.showSnackbar("No se encontró el ID de la reserva.") }
+                                return@Button
+                            }
+
+                            // TODO: Aquí va la lógica para subir el comprobante al backend
+                            // viewModel.uploadReceipt(createdReservationId!!, receiptUri!!)
+
+                            scope.launch { snackbarHostState.showSnackbar("Reserva finalizada") }
+
+                            showPaymentSheet = false
+                            receiptUri = null
+                            receiptName = null
+                            createdReservationId = null
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = receiptUri != null
+                    ) {
+                        Text("Finalizar")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+// ── Preview de opinión para ActivityDetailsScreen ──
+@Composable
+private fun OpinionPreviewItem(opinion: OpinionResponse) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = (opinion.nombreUsuario ?: "U").first().uppercase(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = opinion.nombreUsuario ?: "Usuario",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            repeat(5) { index ->
+                Icon(
+                    imageVector = if (index < (opinion.calificacion ?: 0)) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = null,
+                    tint = if (index < (opinion.calificacion ?: 0)) Color(0xFF222222) else Color(0xFFDDDDDD),
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "· ${OpinionViewModel.formatTimeAgo(opinion.fechaCreacion)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = opinion.comentario ?: "",
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 20.sp
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        HorizontalDivider(color = Color(0xFFF0F0F0))
     }
 }
