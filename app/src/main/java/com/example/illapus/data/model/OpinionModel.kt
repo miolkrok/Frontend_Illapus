@@ -7,9 +7,7 @@ package com.example.illapus.data.model
  * @property name Nombre opcional de la ubicación
  * @property address Dirección opcional de la ubicación
  */
-data class OpinionModel(
-    val id: Int?
-)
+
 /**
  * Modelo que representa una opiniÃ³n tal como viene del backend.
  * Coincide con OpinionDTO del backend (app-opiniones).

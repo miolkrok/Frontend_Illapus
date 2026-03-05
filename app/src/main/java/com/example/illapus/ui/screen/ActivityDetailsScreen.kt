@@ -4,7 +4,18 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,13 +27,49 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +80,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.illapus.data.model.OpinionResponse
 import com.example.illapus.ui.components.GenericMap
 import com.example.illapus.ui.components.ImageCarousel
@@ -134,6 +182,21 @@ fun ActivityDetailsScreen(
                 viewModel.clearError()
             }
         }
+    }
+
+    // informacion del cupo disponible
+    val cupoInfo by viewModel.cupoInfo.collectAsState()
+    val isCheckingCupo by viewModel.isCheckingCupo.collectAsState()
+    val fechaBloqueada by viewModel.fechaBloqueada.collectAsState()
+    val comprobanteTexto by viewModel.comprobanteTexto.collectAsState()
+    val context = LocalContext.current
+    val comprobanteUri by viewModel.comprobanteUri.collectAsState()
+    val comprobanteError by viewModel.comprobanteError.collectAsState()
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.setComprobanteImage(it, context) }
     }
 
     Scaffold(
@@ -438,7 +501,10 @@ fun ActivityDetailsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = String.format("%.2f", opinionUiState.promedioCalificacion),
+                                    text = String.format(
+                                        "%.2f",
+                                        opinionUiState.promedioCalificacion
+                                    ),
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF222222)
@@ -553,7 +619,8 @@ fun ActivityDetailsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -642,7 +709,12 @@ fun ActivityDetailsScreen(
                     ) {
                         Text(
                             text = selectedDate?.let {
-                                it.format(DateTimeFormatter.ofPattern("dd 'de' MMMM, yyyy", Locale("es", "ES")))
+                                it.format(
+                                    DateTimeFormatter.ofPattern(
+                                        "dd 'de' MMMM, yyyy",
+                                        Locale("es", "ES")
+                                    )
+                                )
                             } ?: "Seleccionar fecha",
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (selectedDate != null)
@@ -661,7 +733,8 @@ fun ActivityDetailsScreen(
                 // DatePicker
                 if (showDatePicker) {
                     val datePickerState = rememberDatePickerState(
-                        initialSelectedDateMillis = selectedDate?.toEpochDay()?.times(24 * 60 * 60 * 1000)
+                        initialSelectedDateMillis = selectedDate?.toEpochDay()
+                            ?.times(24 * 60 * 60 * 1000)
                             ?: System.currentTimeMillis()
                     )
 
@@ -671,14 +744,13 @@ fun ActivityDetailsScreen(
                             TextButton(
                                 onClick = {
                                     datePickerState.selectedDateMillis?.let { millis ->
-                                        val date = LocalDate.ofEpochDay(millis / (24 * 60 * 60 * 1000))
+                                        val date =
+                                            LocalDate.ofEpochDay(millis / (24 * 60 * 60 * 1000))
                                         viewModel.selectReservationDate(date)
                                     }
                                     viewModel.hideDatePicker()
                                 }
-                            ) {
-                                Text("Confirmar")
-                            }
+                            ) { Text("Confirmar") }
                         },
                         dismissButton = {
                             TextButton(
@@ -691,6 +763,163 @@ fun ActivityDetailsScreen(
                         DatePicker(
                             state = datePickerState,
                             showModeToggle = false
+                        )
+                    }
+                }
+
+                // COMPROBANTE DE PAGO (NUEVO)
+                Text(
+                    text = "Comprobante de pago *",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Sube la imagen del comprobante de tu transferencia",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Campo de texto para descripción del comprobante
+                OutlinedTextField(
+                    value = comprobanteTexto,
+                    onValueChange = { viewModel.setComprobanteTexto(it) },
+                    label = { Text("Detalle del comprobante") },
+                    placeholder = { Text("Ej: Transferencia Banco Pichincha #123456") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = false,
+                    maxLines = 3,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (comprobanteUri != null) {
+                    // Mostrar preview de la imagen seleccionada
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            AsyncImage(
+                                model = comprobanteUri,
+                                contentDescription = "Comprobante de pago",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            // Botón para cambiar/eliminar la imagen
+                            Row(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(8.dp)
+                            ) {
+                                FilledTonalButton(
+                                    onClick = { imagePickerLauncher.launch("image/*") },
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    Text("Cambiar", fontSize = 12.sp)
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                FilledTonalButton(
+                                    onClick = { viewModel.clearComprobante() },
+                                    modifier = Modifier.height(32.dp),
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer
+                                    )
+                                ) {
+                                    Text(
+                                        "Eliminar",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Botón para seleccionar imagen
+                    OutlinedCard(
+                        onClick = { imagePickerLauncher.launch("image/*") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Subir comprobante",
+                                    modifier = Modifier.size(32.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Toca para subir comprobante",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Error del comprobante
+                if (comprobanteError != null) {
+                    Text(
+                        text = comprobanteError ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                // ── Info de cupo/disponibilidad ──
+                if (isCheckingCupo) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Verificando disponibilidad...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                    }
+                } else if (cupoInfo != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (fechaBloqueada)
+                                MaterialTheme.colorScheme.errorContainer
+                            else if (cupoInfo?.startsWith("⚠") == true)
+                                Color(0xFFFFF3E0) // Naranja claro
+                            else
+                                Color(0xFFE8F5E9) // Verde claro
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = cupoInfo ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(12.dp),
+                            color = if (fechaBloqueada)
+                                MaterialTheme.colorScheme.error
+                            else
+                                Color(0xFF333333)
                         )
                     }
                 }
@@ -741,17 +970,9 @@ fun ActivityDetailsScreen(
                     }
 
                     Button(
-                        onClick = {
-                            // Primero crea la reserva en el backend
-                            // TODO: Reemplazar con la respuesta real del backend
-                            // viewModel.createReservation() y obtener el ID de la respuesta
-                            createdReservationId = 999 // Quemado por ahora
-
-                            viewModel.hideReservationBottomSheet()
-                            showPaymentSheet = true
-                        },
+                        onClick = { viewModel.createReservation() },
                         modifier = Modifier.weight(1f),
-                        enabled = !isCreatingReservation && selectedDate != null
+                        enabled = !isCreatingReservation && selectedDate != null && comprobanteUri != null && !fechaBloqueada
                     ) {
                         if (isCreatingReservation) {
                             CircularProgressIndicator(
@@ -759,6 +980,8 @@ fun ActivityDetailsScreen(
                                 color = MaterialTheme.colorScheme.onPrimary,
                                 strokeWidth = 2.dp
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "Enviando...")
                         } else {
                             Text(text = "Confirmar")
                         }
@@ -830,7 +1053,14 @@ fun ActivityDetailsScreen(
                     }
 
                     OutlinedButton(
-                        onClick = { pickFileLauncher.launch(arrayOf("application/pdf", "image/*")) },
+                        onClick = {
+                            pickFileLauncher.launch(
+                                arrayOf(
+                                    "application/pdf",
+                                    "image/*"
+                                )
+                            )
+                        },
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("PDF")
@@ -928,9 +1158,13 @@ private fun OpinionPreviewItem(opinion: OpinionResponse) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             repeat(5) { index ->
                 Icon(
-                    imageVector = if (index < (opinion.calificacion ?: 0)) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    imageVector = if (index < (opinion.calificacion
+                            ?: 0)
+                    ) Icons.Filled.Star else Icons.Outlined.StarBorder,
                     contentDescription = null,
-                    tint = if (index < (opinion.calificacion ?: 0)) Color(0xFF222222) else Color(0xFFDDDDDD),
+                    tint = if (index < (opinion.calificacion ?: 0)) Color(0xFF222222) else Color(
+                        0xFFDDDDDD
+                    ),
                     modifier = Modifier.size(14.dp)
                 )
             }
