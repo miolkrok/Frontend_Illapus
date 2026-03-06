@@ -29,6 +29,8 @@ object ApiClient {
 
     private var _pagoService: PagoApiService? = null
 
+    private var _usuarioService: AuthApiService? = null
+
     val authApiService: AuthApiService
         get() {
             if (_authApiService == null) {
@@ -210,6 +212,7 @@ object ApiClient {
         _searchService = null
         _opinionService = null
         _pagoService = null
+        _usuarioService = null
 
         Log.d("ApiClient", "ApiClient reinicializado con URL: $baseUrl")
     }
@@ -228,5 +231,13 @@ object ApiClient {
                 _pagoService = retrofit.create(PagoApiService::class.java)
             }
             return _pagoService!!
+        }
+
+    val usuarioService: AuthApiService
+        get() {
+            if (_usuarioService == null) {
+                _usuarioService = retrofit.create(AuthApiService::class.java)
+            }
+            return _usuarioService!!
         }
 }

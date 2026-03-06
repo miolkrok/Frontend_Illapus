@@ -1,5 +1,6 @@
 package com.example.illapus.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.illapus.data.api.ApiClient
 import com.example.illapus.utils.TokenManager
@@ -96,6 +97,71 @@ class ProfileViewModel : BaseViewModel() {
         AuthManager.logout()
         return true // Devuelve true si el cierre de sesión fue exitoso
     }
+
+    // Convertir a operador turístico (PROVEEDOR)
+
+    /**
+     * Muestra el diálogo de confirmación para convertirse en operador turístico
+     */
+    fun showConvertirProveedorDialog() {
+        _uiState.update { it.copy(showConvertirDialog = true) }
+    }
+
+    fun dismissConvertirProveedorDialog() {
+        _uiState.update { it.copy(showConvertirDialog = false) }
+    }
+
+    /**
+     * Llama al backend para cambiar el rol de CLIENTE a PROVEEDOR
+     */
+    fun convertirAProveedor() {
+        _uiState.update { it.copy(isConvertingToProveedor = true, showConvertirDialog = false) }
+
+        viewModelScope.launch {
+            try {
+                val response = ApiClient.usuarioService.convertirAProveedor()
+
+                if (response.isSuccessful) {
+                    Log.d("ProfileViewModel", "Usuario convertido a PROVEEDOR exitosamente")
+                    _uiState.update {
+                        it.copy(
+                            isConvertingToProveedor = false,
+                            requiresRelogin = true
+                        )
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                    Log.e("ProfileViewModel", "Error al convertir: $errorBody")
+
+                    val errorMsg = if (response.code() == 409) {
+                        "Ya eres operador turístico"
+                    } else {
+                        "Error al cambiar rol: $errorBody"
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            isConvertingToProveedor = false,
+                            errorMessage = errorMsg
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error: ${e.message}")
+                _uiState.update {
+                    it.copy(
+                        isConvertingToProveedor = false,
+                        errorMessage = "Error de conexión: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearSuccessMessage() {
+        _uiState.update { it.copy(successMessage = null) }
+    }
+
 }
 
 // Clase que representa el estado de la UI para la pantalla de perfil
@@ -107,5 +173,10 @@ data class ProfileUiState(
     val profileImageUrl: String? = null,
     val showLogoutDialog: Boolean = false,
     val errorMessage: String? = null,
-    val isProveedor: Boolean = false
+    val isProveedor: Boolean = false,
+
+    val requiresRelogin: Boolean = false,
+    val showConvertirDialog: Boolean = false,
+    val isConvertingToProveedor: Boolean = false,
+    val successMessage: String? = null
 )

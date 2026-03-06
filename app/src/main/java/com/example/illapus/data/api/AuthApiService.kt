@@ -8,6 +8,8 @@ import com.example.illapus.data.model.UserInfoResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.Response
+import retrofit2.http.PUT
 
 interface AuthApiService {
     @POST("auth/login")
@@ -18,5 +20,8 @@ interface AuthApiService {
 
     @GET("auth/me")
     suspend fun getUserInfo(): UserInfoResponse
+
+    @PUT("usuarios/convertir-proveedor")
+    suspend fun convertirAProveedor(): Response<Map<String, Any>>
 
 }
