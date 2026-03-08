@@ -157,13 +157,52 @@ class ActivityDetailsViewModel : BaseViewModel() {
         val destinationLocation = LocationUtils.parseLocationFromJson(activity.destinationLocationJson)
             ?: LocationModel(0.0, 0.0, "Destino no disponible", "")
 
+        // Construir nombre completo del anfitrión
+        val nombreAnfitrion = activity.nombreProveedor ?:
+        buildString {
+            if (!activity.nombreUsuario.isNullOrEmpty()) append(activity.nombreUsuario)
+            if (!activity.apellidoUsuario.isNullOrEmpty()) {
+                if (isNotEmpty()) append(" ")
+                append(activity.apellidoUsuario)
+            }
+        }.ifEmpty { "Anfitrión" }
+
+
+        // Calcular años activo
+        val añosActivo = activity.fechaRegistroUsuario?.let { fechaRegistro ->
+            try {
+                val fecha = LocalDateTime.parse(fechaRegistro)
+                java.time.temporal.ChronoUnit.YEARS.between(fecha, LocalDateTime.now()).toInt()
+            } catch (e: Exception) {
+                0
+            }
+        } ?: 0
+
+        // Extraer ciudad y provincia de CADA ubicación por separado
+        val ciudadSalida = extractCityFromAddress(departureLocation.address)
+        val provinciaSalida = extractProvinceFromAddress(departureLocation.address)
+
+        val ciudadDestino = extractCityFromAddress(destinationLocation.address)
+        val provinciaDestino = extractProvinceFromAddress(destinationLocation.address)
+
+        val departureWithLocation = departureLocation.copy(
+            ciudad = ciudadSalida,        // Usar la ciudad de salida
+            provincia = provinciaSalida   // Usar la provincia de salida
+        )
+
+        val destinationWithLocation = destinationLocation.copy(
+            ciudad = ciudadDestino,        // Usar la ciudad de destino
+            provincia = provinciaDestino   // Usar la provincia de destino
+        )
+
         // Ordenar imágenes: principal primero
         val sortedImages = activity.galeria
-            .sortedByDescending { it.isPrimaryImage }
-            .map { it.displayImage ?: ""  }
+            ?.sortedByDescending { it.isPrimaryImage }
+            ?.map { it.displayImage ?: "" }
+            ?: emptyList()
 
         // Extraer nombres de servicios
-        val services = activity.services.map { it.serviceName }
+        val services = activity.services?.map { it.serviceName } ?: emptyList()
 
         return PropertyDetailsModel(
             id = activity.id.toString(),
@@ -172,11 +211,11 @@ class ActivityDetailsViewModel : BaseViewModel() {
             images = sortedImages,
             rating = 0f, // Por ahora no viene en la API
             price = activity.price,
-            departureLocation = departureLocation,
-            destinationLocation = destinationLocation,
+            departureLocation = departureWithLocation,
+            destinationLocation = destinationWithLocation,
             host = HostModel(
-                name = "Carlos García", // Mantenemos quemado por ahora
-                yearsActive = 9
+                name = nombreAnfitrion,
+                yearsActive = añosActivo
             ),
             duration = activity.duration,
             availability = activity.availability,
@@ -184,8 +223,92 @@ class ActivityDetailsViewModel : BaseViewModel() {
             difficultyLevel = activity.difficultyLevel,
             minPeople = activity.minPeople,
             maxPeople = activity.maxPeople,
-            services = services
+            services = services,
+            cuentaBancaria = activity.cuentaBancaria
         )
+    }
+
+    private fun cleanAddressPart(part: String): String {
+        return part.trim()
+            .replace(Regex("\\d{4,6}"), "")                 // quita códigos postales 4-6 dígitos
+            .replace(Regex("[#\\-–—_+/\\\\]"), " ")         // símbolos comunes → espacio
+            .replace(Regex("\\b[A-Z]+\\d+[A-Z]*\\b"), "")   // elimina patrones tipo ABC123 o ABC123A
+            .replace(Regex("\\b[A-Z]\\d+[A-Z]\\b"), "")     // elimina combinaciones tipo A1B
+            .replace(Regex("[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\\s]"), " ") // elimina cualquier símbolo restante
+            .replace(Regex("^\\d+\\s*"), "")                // números al inicio
+            .replace(Regex("\\s*\\d+$"), "")                // números al final
+            .replace(Regex("\\s+"), " ")                    // múltiples espacios → uno
+            .trim()
+            .takeIf { it.length >= 4 && !it.all { c -> c.isDigit() } } // ignora si es muy corto o solo números
+            ?: ""
+    }
+
+    private fun extractCityFromAddress(address: String): String {
+        if (address.isBlank()) return "No disponible"
+
+        // Dividir y limpiar todas las partes
+        val parts = address.split(",")
+            .map { cleanAddressPart(it) }
+            .filter { it.isNotBlank() }
+
+        if (parts.isEmpty()) return address.trim()
+
+        // Remover el país (última parte si es conocida o muy corta)
+        val cleanedParts = if (parts.last().length <= 10 &&
+            (parts.last().contains("Ecuador|Colombia|ECU|COL|EC|CO", ignoreCase = true) ||
+                    parts.last().all { it.isLetter() || it.isWhitespace() })) {
+            parts.dropLast(1)
+        } else {
+            parts
+        }
+
+        return when {
+            // Caso más común: ..., Ciudad, Provincia, País
+            cleanedParts.size >= 2 -> {
+                // Intentamos tomar la antepenúltima si existe, sino la primera "limpia"
+                val candidate = cleanedParts.getOrNull(cleanedParts.size - 2) ?: cleanedParts[0]
+
+                // Si la penúltima parece provincia (palabra simple, no muy larga),
+                // entonces ciudad es la anterior
+                if (candidate.length <= 25 && !candidate.contains(" ")) {
+                    cleanedParts.getOrNull(cleanedParts.size - 3) ?: candidate
+                } else {
+                    candidate
+                }
+            }
+
+            cleanedParts.size == 1 -> {
+                // Solo queda una parte → puede ser "Quito 170401" → quitar números
+                cleanedParts[0].replace(Regex("\\d+.*"), "").trim()
+            }
+
+            else -> cleanedParts.first()
+        }.replace(Regex("\\s+"), " ").trim()
+    }
+
+    private fun extractProvinceFromAddress(address: String): String {
+        if (address.isBlank()) return ""
+
+        val parts = address.split(",")
+            .map { cleanAddressPart(it) }
+            .filter { it.isNotBlank() }
+
+        if (parts.size < 2) return ""
+
+        // Penúltima parte suele ser provincia (antes del país)
+        val candidate = parts[parts.size - 2]
+
+        // Si la última es país, penúltima = provincia
+        // Si no, penúltima podría ser provincia o ciudad+cp → tomamos la que parece provincia
+        return if (parts.last().length <= 12 &&
+            parts.last().matches(Regex("(?i)(ecuador|colombia|ecu|col|ec|co).*"))) {
+            candidate
+        } else {
+            // Fallback: la parte más "limpia" y corta que no sea números
+            parts.reversed().firstOrNull {
+                it.length in 4..25 && !it.contains(Regex("\\d{4,}"))
+            } ?: ""
+        }.trim()
     }
 
     /**
@@ -285,11 +408,11 @@ class ActivityDetailsViewModel : BaseViewModel() {
 
                         if (cupo <= 0) {
                             _fechaBloqueada.value = true
-                            _cupoInfo.value = "⛔ No hay cupo para esta fecha ($reservadas/$max personas reservadas)"
+                            _cupoInfo.value = "No hay cupo para esta fecha ($reservadas/$max personas reservadas)"
                         } else if (cupo < _guestCount.value) {
-                            _cupoInfo.value = "⚠️ Solo quedan $cupo cupos. Reduce el número de personas."
+                            _cupoInfo.value = "Solo quedan $cupo cupos. Reduce el número de personas."
                         } else {
-                            _cupoInfo.value = "✅ Disponible: $cupo cupos restantes ($reservadas/$max)"
+                            _cupoInfo.value = "Disponible: $cupo cupos restantes ($reservadas/$max)"
                         }
 
                         Log.d("ActivityDetailsVM", "Disponibilidad: $reservadas/$max reservadas, $cupo disponibles")
@@ -373,11 +496,10 @@ class ActivityDetailsViewModel : BaseViewModel() {
 
         // Comprimir la imagen para no enviar archivos muy grandes
         val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
         val bytes = outputStream.toByteArray()
 
-        val base64String = Base64.encodeToString(bytes, Base64.NO_WRAP)
-        return "data:image/jpeg;base64,$base64String"
+        return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
     /**
@@ -461,7 +583,8 @@ class ActivityDetailsViewModel : BaseViewModel() {
                     return@launch
                 }
 
-                val reservaCreada = reservaResponse.body()
+                val wrapper = reservaResponse.body()
+                val reservaCreada = wrapper?.reserva
                 if (reservaCreada == null) {
                     _error.value = "Error: respuesta vacía del servidor al crear reserva"
                     _isCreatingReservation.value = false

@@ -1,5 +1,6 @@
 package com.example.illapus.data.api
 
+import com.example.illapus.data.model.ReserveApiResponse
 import com.example.illapus.data.model.ReserveDTO
 import com.example.illapus.data.model.ReserveCreationResponse
 import retrofit2.Response
@@ -30,6 +31,8 @@ interface ReserveApiService {
     @DELETE("reservas/{id}")
     suspend fun deleteReservation(@Path("id") id: Int): Response<Unit>
 
+    @POST("reservas")
+    suspend fun createReservation(@Body reserva: ReserveDTO): Response<ReserveApiResponse>
     @GET("reservas/disponibilidad/{actividadId}")
     suspend fun getDisponibilidad(
         @Path("actividadId") actividadId: Int,

@@ -176,11 +176,11 @@ fun GenericScreen(
                                         activityData.tipoActividad.isNotBlank() && activityData.nivelDificultad.isNotBlank()
                                     ActivityCreationStep.DETAILS ->
                                         activityData.precio > 0 &&
-                                        activityData.duracion.isNotBlank() &&
-                                        activityData.maximoPersonas > 0 &&
-                                        activityData.diasDisponibles.isNotEmpty() &&
-                                        activityData.fechaInicioDisponible.isNotBlank() &&
-                                        activityData.fechaFinDisponible.isNotBlank()
+                                                activityData.duracion.isNotBlank() &&
+                                                activityData.maximoPersonas > 0 &&
+                                                activityData.diasDisponibles.isNotEmpty() &&
+                                                activityData.fechaInicioDisponible.isNotBlank() &&
+                                                activityData.fechaFinDisponible.isNotBlank()
                                     ActivityCreationStep.GALLERY -> true
                                     ActivityCreationStep.SERVICES -> true
                                 }
@@ -243,6 +243,9 @@ fun GenericScreen(
                     },
                     onUpdateAvailability = { diasDisponibles, fechaInicio, fechaFin ->
                         viewModel.updateAvailability(diasDisponibles, fechaInicio, fechaFin)
+                    },
+                    onUpdateCuentaBancaria = { cuentaBancaria ->
+                        viewModel.updateCuentaBancaria(cuentaBancaria)
                     }
                 )
 
@@ -443,12 +446,14 @@ fun ActivityTypeContent(
 fun DetailsContent(
     activityData: com.example.illapus.ui.viewmodel.ActivityData,
     onUpdateDetails: (Double, String, Int, Int) -> Unit,
-    onUpdateAvailability: (List<String>, String, String) -> Unit
+    onUpdateAvailability: (List<String>, String, String) -> Unit,
+    onUpdateCuentaBancaria: (String) -> Unit
 ) {
     var precio by remember { mutableStateOf(activityData.precio.toString()) }
     var duracion by remember { mutableStateOf(activityData.duracion) }
     var maxPersonas by remember { mutableStateOf(activityData.maximoPersonas.toString()) }
     var minPersonas by remember { mutableStateOf(activityData.minimoPersonas.toString()) }
+    var cuentaBancaria by remember { mutableStateOf(activityData.cuentaBancaria) }
 
     // Estados para los días de la semana
     val diasDeLaSemana = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
@@ -623,6 +628,78 @@ fun DetailsContent(
                 },
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+
+        // SECCIÓN DE PAGOS - NUEVO
+        item {
+            Text(
+                text = "Información de Pago",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Banco Pichincha",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = cuentaBancaria,
+                        onValueChange = {
+                            cuentaBancaria = it
+                            onUpdateCuentaBancaria(it)
+                        },
+                        label = { Text("Número de cuenta de ahorros") },
+                        placeholder = { Text("Ej: 1234567890") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        supportingText = {
+                            Text(
+                                text = "Los clientes depositarán el pago a esta cuenta",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        isError = cuentaBancaria.isNotBlank() && (cuentaBancaria.length < 10 || cuentaBancaria.length > 20)
+                    )
+
+                    if (cuentaBancaria.isNotBlank() && (cuentaBancaria.length < 10 || cuentaBancaria.length > 20)) {
+                        Text(
+                            text = "La cuenta debe tener entre 10 y 20 dígitos",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Importante: Asegúrate de que el número de cuenta sea correcto para recibir los pagos de tus clientes.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 

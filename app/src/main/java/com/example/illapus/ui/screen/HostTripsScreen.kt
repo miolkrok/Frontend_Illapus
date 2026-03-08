@@ -27,7 +27,9 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 fun HostTripsScreen(
     modifier: Modifier = Modifier,
     viewModel: HostTripsViewModel = viewModel(),
-    navController: NavController
+    navController: NavController,
+    isHostMode: Boolean,
+    onNavigateToProfile: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val swipeRefreshState = rememberSwipeRefreshState(uiState.isLoading)
@@ -171,6 +173,11 @@ fun HostTripsScreen(
                                                     "{activityId}",
                                                     activityId.toString()
                                                 )
+                                            )
+                                        },
+                                        onViewPayments = { activityId ->  // Callback para ver pagos
+                                            navController.navigate(
+                                                "payments_list/${activityId}"
                                             )
                                         }
                                     )

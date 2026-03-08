@@ -319,7 +319,10 @@ fun ProfileScreen(
             // FloatingActionButton centrado en la parte inferior - Solo visible si el usuario es proveedor
             if (uiState.isProveedor) {
                 FloatingActionButton(
-                    onClick = { onToggleHostMode(!isHostMode) },
+                    onClick = {
+                        val nuevoModo = !isHostMode
+                        onToggleHostMode(nuevoModo)
+                    },
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier

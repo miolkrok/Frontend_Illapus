@@ -1,6 +1,18 @@
 package com.example.illapus.ui.screen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -13,29 +25,72 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.FilterListOff
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RangeSlider
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.illapus.data.config.FilterOptions
 import com.example.illapus.ui.components.PropertyCard
 import com.example.illapus.ui.navigation.AppDestinations
+import com.example.illapus.ui.navigation.NavigationItems
 import com.example.illapus.ui.viewmodel.ActivityViewModel
+import com.example.illapus.ui.viewmodel.FilterViewModel
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import androidx.compose.ui.res.painterResource
+import com.example.illapus.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivityScreen(
     modifier: Modifier = Modifier,
     viewModel: ActivityViewModel,
-    navController: NavController
+    filterViewModel: FilterViewModel = viewModel(),
+    navController: NavController,
+    isHostMode: Boolean,
+    onNavigateToProfile: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val swipeRefreshState = rememberSwipeRefreshState(uiState.isRefreshing)
@@ -86,41 +141,104 @@ fun ActivityScreen(
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
 
-                    // Filtro de Ubicación
+                    // FILTRO DE UBICACIÓN - Versión mejorada con datos del backend
                     Text(
                         text = "Ubicación",
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
-                    ExposedDropdownMenuBox(
-                        expanded = expandedLocation,
-                        onExpandedChange = { expandedLocation = !expandedLocation }
-                    ) {
+                    val filterViewModel: FilterViewModel =
+                        viewModel() // Agregar esta línea al inicio del composable
+
+                    val availableCities by filterViewModel.availableCities.collectAsState()
+                    val isLoadingLocations by filterViewModel.isLoading.collectAsState()
+
+                    var locationText by remember { mutableStateOf(uiState.filterCriteria.ubicacion) }
+                    var showSuggestions by remember { mutableStateOf(false) }
+
+                    // Filtrar ciudades según el texto ingresado
+                    val filteredCities = remember(availableCities, locationText) {
+                        if (locationText.isBlank()) {
+                            emptyList()
+                        } else {
+                            availableCities.filter {
+                                it.contains(locationText, ignoreCase = true)
+                            }.take(5) // Limitar a 5 sugerencias
+                        }
+                    }
+
+                    Column {
                         OutlinedTextField(
-                            value = uiState.filterCriteria.ubicacion,
-                            onValueChange = { },
-                            readOnly = true,
-                            label = { Text("Seleccionar ubicación") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLocation) },
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth()
+                            value = locationText,
+                            onValueChange = {
+                                locationText = it
+                                viewModel.updateLocation(it)
+                                showSuggestions = it.isNotBlank()
+                            },
+                            label = { Text("Buscar ciudad") },
+                            placeholder = { Text("Ej: Quito, Cuenca, Guayaquil...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            trailingIcon = {
+                                if (isLoadingLocations) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                }
+                            }
                         )
 
-                        ExposedDropdownMenu(
-                            expanded = expandedLocation,
-                            onDismissRequest = { expandedLocation = false }
-                        ) {
-                            FilterOptions.locationOptions.forEach { location ->
-                                DropdownMenuItem(
-                                    text = { Text(location) },
-                                    onClick = {
-                                        viewModel.updateLocation(location)
-                                        expandedLocation = false
+                        // Mostrar sugerencias
+                        if (showSuggestions && filteredCities.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            ) {
+                                Column {
+                                    filteredCities.forEach { city ->
+                                        TextButton(
+                                            onClick = {
+                                                locationText = city
+                                                viewModel.updateLocation(city)
+                                                showSuggestions = false
+                                            },
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = city,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(8.dp)
+                                            )
+                                        }
+
+                                        if (city != filteredCities.last()) {
+                                            Divider()
+                                        }
                                     }
-                                )
+                                }
                             }
+                        }
+
+                        // Mostrar mensaje de carga
+                        if (isLoadingLocations && availableCities.isEmpty()) {
+                            Text(
+                                text = "Cargando ciudades...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                            )
+                        }
+
+                        // Mostrar mensaje si no hay resultados
+                        if (locationText.isNotBlank() && filteredCities.isEmpty() && !isLoadingLocations) {
+                            Text(
+                                text = "No se encontraron ciudades",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                            )
                         }
                     }
 
@@ -279,7 +397,10 @@ fun ActivityScreen(
                     RangeSlider(
                         value = uiState.filterCriteria.precioMin.toFloat()..uiState.filterCriteria.precioMax.toFloat(),
                         onValueChange = { range ->
-                            viewModel.updatePriceRange(range.start.toDouble(), range.endInclusive.toDouble())
+                            viewModel.updatePriceRange(
+                                range.start.toDouble(),
+                                range.endInclusive.toDouble()
+                            )
                         },
                         valueRange = FilterOptions.PriceRange.MIN_PRICE.toFloat()..FilterOptions.PriceRange.MAX_PRICE.toFloat(),
                         modifier = Modifier.fillMaxWidth()
@@ -439,13 +560,27 @@ fun ActivityScreen(
                                     }
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
                             enabled = uiState.properties.isNotEmpty() || uiState.searchQuery.isNotBlank() // Deshabilitar si no hay actividades
                         ) {
                             // Contenido del SearchBar cuando está activo - vacío
                         }
                     },
                     actions = {
+                        // NUEVO: Botón de perfil
+                        IconButton(
+                            onClick = {
+                                navController.navigate(NavigationItems.Profile.route)
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_profile),
+                                contentDescription = "Perfil",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         IconButton(
                             onClick = {
                                 scope.launch {
@@ -491,6 +626,7 @@ fun ActivityScreen(
                                     CircularProgressIndicator()
                                 }
                             }
+
                             uiState.errorMessage != null && uiState.properties.isEmpty() -> {
                                 Box(
                                     modifier = Modifier.fillMaxSize(),
@@ -513,6 +649,7 @@ fun ActivityScreen(
                                     }
                                 }
                             }
+
                             uiState.properties.isEmpty() && !uiState.isLoading -> {
                                 Box(
                                     modifier = Modifier.fillMaxSize(),
@@ -525,10 +662,13 @@ fun ActivityScreen(
                                             text = when {
                                                 uiState.searchQuery.isNotBlank() && uiState.hasAppliedFilters ->
                                                     "No se encontraron actividades con '${uiState.searchQuery}' en los resultados filtrados"
+
                                                 uiState.searchQuery.isNotBlank() ->
                                                     "No se encontraron actividades con '${uiState.searchQuery}'"
+
                                                 uiState.hasAppliedFilters ->
                                                     "No se encontraron actividades con los filtros aplicados"
+
                                                 else ->
                                                     "No hay actividades disponibles"
                                             },
@@ -561,10 +701,14 @@ fun ActivityScreen(
                                     }
                                 }
                             }
+
                             else -> {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                                    contentPadding = PaddingValues(
+                                        horizontal = 8.dp,
+                                        vertical = 8.dp
+                                    ),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     items(uiState.properties) { property ->

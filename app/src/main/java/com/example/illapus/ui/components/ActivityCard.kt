@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,7 +46,8 @@ fun ActivityCard(
     activity: ActivityDetailsModel,
     onClick: () -> Unit,
     onDelete: (Int) -> Unit = {},
-    onEdit: (Int) -> Unit = {}
+    onEdit: (Int) -> Unit = {},
+    onViewPayments: (Int) -> Unit
 ) {
     var showDropdownMenu by remember { mutableStateOf(false) }
 
@@ -65,8 +66,9 @@ fun ActivityCard(
             // Encabezado con imagen y menú overflow
             Box {
                 // Imagen principal de la actividad
-                if (activity.galeria.isNotEmpty()) {
-                    val primaryImage = activity.galeria.find { it.isPrimaryImage } ?: activity.galeria.first()
+                if (!activity.galeria.isNullOrEmpty()) {
+                    val primaryImage =
+                        activity.galeria.find { it.isPrimaryImage } ?: activity.galeria.first()
                     AdaptiveImage(
                         imageData = primaryImage.displayImage,
                         contentDescription = activity.title,
@@ -111,6 +113,22 @@ fun ActivityCard(
                         expanded = showDropdownMenu,
                         onDismissRequest = { showDropdownMenu = false }
                     ) {
+                        // NUEVA OPCIÓN: Ver Pagos
+                        DropdownMenuItem(
+                            text = { Text("Ver Pagos", color = MaterialTheme.colorScheme.primary) },
+                            onClick = {
+                                showDropdownMenu = false
+                                onViewPayments(activity.id)
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Payment,
+                                    contentDescription = "Ver Pagos",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        )
+
                         DropdownMenuItem(
                             text = { Text("Editar", color = MaterialTheme.colorScheme.primary) },
                             onClick = {
@@ -191,7 +209,22 @@ fun ActivityCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${activity.ciudad}, ${activity.provincia}",
+                        text = run {
+                            // Intentar parsear la ubicación de destino para mostrar nombre
+                            try {
+                                val json = com.google.gson.JsonParser.parseString(
+                                    activity.destinationLocationJson
+                                ).asJsonObject
+                                val name = json.get("name")?.asString ?: ""
+                                val address = json.get("address")?.asString ?: ""
+                                if (name.isNotBlank()) "$name" else if (address.isNotBlank()) address else "Sin ubicación"
+                            } catch (e: Exception) {
+                                "${activity.ciudad ?: ""}, ${activity.provincia ?: ""}".trim(
+                                    ',',
+                                    ' '
+                                ).ifEmpty { "Sin ubicación" }
+                            }
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,

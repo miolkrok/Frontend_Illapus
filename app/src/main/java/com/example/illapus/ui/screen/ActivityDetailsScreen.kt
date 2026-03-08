@@ -1,5 +1,6 @@
 package com.example.illapus.ui.screen
 
+import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -89,9 +91,14 @@ import com.example.illapus.ui.viewmodel.ActivityDetailsViewModel
 import com.example.illapus.ui.viewmodel.OpinionViewModel
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.SelectableDates
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -279,6 +286,101 @@ fun ActivityDetailsScreen(
                                     .padding(vertical = 16.dp)
                             )
 
+                            // Después de mostrar el precio o en una sección de pago
+                            if (details.cuentaBancaria.isNotBlank()) {
+
+                                Text(
+                                    text = "Datos Bancarios",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Star, // Cambia por un ícono de banco si tienes
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Banco Pichincha",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text(
+                                            text = "Cuenta de Ahorros",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+
+                                        Text(
+                                            text = details.cuentaBancaria,
+                                            style = MaterialTheme.typography.headlineSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text(
+                                            text = "Realiza el depósito a esta cuenta y sube el comprobante al reservar",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+
+                                        // Botón para copiar la cuenta
+                                        Button(
+                                            onClick = {
+                                                // Lógica para copiar al portapapeles
+                                                val clipboardManager = context.getSystemService(
+                                                    Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                                val clip = android.content.ClipData.newPlainText("Número de cuenta", details.cuentaBancaria)
+                                                clipboardManager.setPrimaryClip(clip)
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Número de cuenta copiado",
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                }
+
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.primary
+                                            )
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ContentCopy,
+                                                contentDescription = "Copiar"
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Copiar número de cuenta")
+                                        }
+                                    }
+                                }
+                            }
+
                             // Información del anfitrión
                             Text(
                                 text = buildAnnotatedString {
@@ -439,7 +541,47 @@ fun ActivityDetailsScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                // Mostrar ciudad y provincia del punto de salida
+                                if (details.departureLocation.ciudad.isNotBlank() || details.departureLocation.provincia.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.padding(top = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        if (details.departureLocation.ciudad.isNotBlank()) {
+                                            Card(
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                                ),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Ciudad: ${details.departureLocation.ciudad}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                            }
+                                        }
+                                        if (details.departureLocation.provincia.isNotBlank()) {
+                                            Card(
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                                ),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Provincia: ${details.departureLocation.provincia}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // destino
+                                Spacer(modifier = Modifier.height(12.dp))
 
                                 Text(
                                     text = "🎯 Destino",
@@ -457,6 +599,45 @@ fun ActivityDetailsScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+
+                                // Mostrar ciudad y provincia del destino
+                                if (details.destinationLocation.ciudad.isNotBlank() || details.destinationLocation.provincia.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.padding(top = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        if (details.destinationLocation.ciudad.isNotBlank()) {
+                                            Card(
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                                ),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Ciudad: ${details.destinationLocation.ciudad}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                            }
+                                        }
+                                        if (details.destinationLocation.provincia.isNotBlank()) {
+                                            Card(
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                                ),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Provincia: ${details.destinationLocation.provincia}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -482,9 +663,7 @@ fun ActivityDetailsScreen(
                                 showCurrentLocationButton = false
                             )
 
-                            // ══════════════════════════════════════════════
                             // SECCIÓN DE OPINIONES (datos reales del backend)
-                            // ══════════════════════════════════════════════
                             Divider(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -573,8 +752,11 @@ fun ActivityDetailsScreen(
                                 )
                                 Text(
                                     text = details.availability,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textDecoration = TextDecoration.Underline
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textDecoration = TextDecoration.Underline,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.widthIn(max = 150.dp)
                                 )
                             }
                             Button(
@@ -730,12 +912,27 @@ fun ActivityDetailsScreen(
                     }
                 }
 
+                val allowedDays = remember(activityDetails?.availability) {
+                    parseAllowedDays(activityDetails?.availability ?: "")
+                }
+
                 // DatePicker
                 if (showDatePicker) {
                     val datePickerState = rememberDatePickerState(
                         initialSelectedDateMillis = selectedDate?.toEpochDay()
                             ?.times(24 * 60 * 60 * 1000)
-                            ?: System.currentTimeMillis()
+                            ?: System.currentTimeMillis(),
+                        selectableDates = object : SelectableDates {
+                            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                                if (allowedDays.isEmpty()) return false
+
+                                val localDate = Instant.ofEpochMilli(utcTimeMillis)
+                                    .atZone(ZoneId.of("UTC"))
+                                    .toLocalDate()
+
+                                return localDate.dayOfWeek in allowedDays
+                            }
+                        }
                     )
 
                     DatePickerDialog(
@@ -1189,4 +1386,22 @@ private fun OpinionPreviewItem(opinion: OpinionResponse) {
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(color = Color(0xFFF0F0F0))
     }
+}
+
+private fun parseAllowedDays(raw: String): Set<DayOfWeek> {
+    return raw.split(",")
+        .map { it.trim().lowercase() }
+        .mapNotNull { d ->
+            when (d) {
+                "lunes" -> DayOfWeek.MONDAY
+                "martes" -> DayOfWeek.TUESDAY
+                "miércoles", "miercoles" -> DayOfWeek.WEDNESDAY
+                "jueves" -> DayOfWeek.THURSDAY
+                "viernes" -> DayOfWeek.FRIDAY
+                "sábado", "sabado" -> DayOfWeek.SATURDAY
+                "domingo" -> DayOfWeek.SUNDAY
+                else -> null
+            }
+        }
+        .toSet()
 }

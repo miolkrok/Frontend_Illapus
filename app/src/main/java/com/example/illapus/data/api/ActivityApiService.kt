@@ -49,4 +49,11 @@ interface ActivityApiService {
     suspend fun addService(
         @Path("id") activityId: Int, @Body serviceItem: ServicioItem
     ): Response<Any>
+
+    @GET("actividades/provincias")
+    suspend fun getAvailableProvinces(): Response<List<String>>
+
+    // También puedes agregar para ciudades si lo necesitas
+    @GET("actividades/ciudades")
+    suspend fun getAvailableCities(): Response<List<String>>
 }

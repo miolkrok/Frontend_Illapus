@@ -218,7 +218,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // Botón de Facebook
-                Button(
+                /*Button(
                     onClick = { viewModel.loginWithFacebook() },
                     enabled = !uiState.isLoading,
                     shape = RoundedCornerShape(8.dp),
@@ -237,7 +237,7 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Google")
-                }
+                }*/
             }
         }
     }

@@ -31,6 +31,8 @@ object ApiClient {
 
     private var _usuarioService: AuthApiService? = null
 
+    private var _paymentService: PaymentService? = null
+
     val authApiService: AuthApiService
         get() {
             if (_authApiService == null) {
@@ -118,9 +120,9 @@ object ApiClient {
             .addInterceptor(loggingInterceptor)
             .addInterceptor(authInterceptor)
             .addInterceptor(authErrorInterceptor) // Añadir interceptor de errores de auth
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
             .build()
 
         // Creación de la instancia de Retrofit
@@ -213,6 +215,7 @@ object ApiClient {
         _opinionService = null
         _pagoService = null
         _usuarioService = null
+        _paymentService = null
 
         Log.d("ApiClient", "ApiClient reinicializado con URL: $baseUrl")
     }
@@ -240,4 +243,13 @@ object ApiClient {
             }
             return _usuarioService!!
         }
+
+    val paymentService: PaymentService
+        get() {
+            if (_paymentService == null) {
+                _paymentService = retrofit.create(PaymentService::class.java)
+            }
+            return _paymentService!!
+        }
+
 }

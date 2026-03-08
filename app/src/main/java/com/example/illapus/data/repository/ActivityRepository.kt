@@ -1,6 +1,7 @@
 package com.example.illapus.data.repository
 
 import com.example.illapus.data.api.ActivityApiService
+import com.example.illapus.data.api.ApiClient.activityService
 import com.example.illapus.data.model.ActivityDetailsModel
 import com.example.illapus.data.model.ActivityRequest
 import com.example.illapus.data.model.GaleriaItem
@@ -44,5 +45,30 @@ class ActivityRepository(
 
     suspend fun addService(activityId: Int, serviceItem: ServicioItem): Response<Any> {
         return activityApiService.addService(activityId, serviceItem)
+    }
+    suspend fun getAvailableProvinces(): List<String> {
+        return try {
+            val response = activityService.getAvailableProvinces()
+            if (response.isSuccessful) {
+                response.body() ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getAvailableCities(): List<String> {
+        return try {
+            val response = activityService.getAvailableCities()
+            if (response.isSuccessful) {
+                response.body() ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 }

@@ -528,6 +528,27 @@ class GenericViewModel : ViewModel() {
             _isLoading.value = true
             _error.value = null
 
+            // EXTRAER CIUDAD Y PROVINCIA DEL DESTINO
+            var ciudad = ""
+            var provincia = ""
+            try {
+                val destinoJson = com.google.gson.JsonParser.parseString(
+                    _activityData.value.ubicacionDestino
+                ).asJsonObject
+                val address = destinoJson.get("address")?.asString ?: ""
+                // Intentar extraer ciudad de la dirección (formato: "calle, ciudad, provincia, país")
+                val parts = address.split(",").map { it.trim() }
+                if (parts.size >= 3) {
+                    ciudad = parts[parts.size - 3]  // Ciudad suele ser el antepenúltimo
+                    provincia = parts[parts.size - 2] // Provincia el penúltimo
+                } else if (parts.size >= 2) {
+                    ciudad = parts[0]
+                    provincia = parts[1]
+                }
+            } catch (e: Exception) {
+                // Si falla, dejar vacío
+            }
+
             try {
                 val userId = TokenManager.getUserId() ?: 1
                 val currentTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
@@ -560,7 +581,10 @@ class GenericViewModel : ViewModel() {
                         fechaInicioDisponible = _activityData.value.fechaInicioDisponible,
                         fechaFinDisponible = _activityData.value.fechaFinDisponible,
                         galeria = emptyList(),
-                        servicioEvento = _activityData.value.servicioEvento
+                        servicioEvento = _activityData.value.servicioEvento,
+                        ciudad = ciudad,
+                        provincia = provincia,
+                        cuentaBancaria = _activityData.value.cuentaBancaria
                     )
 
                     val success = updateActivityDataOnly(activityId, activityRequest)
@@ -596,7 +620,10 @@ class GenericViewModel : ViewModel() {
                         fechaInicioDisponible = _activityData.value.fechaInicioDisponible,
                         fechaFinDisponible = _activityData.value.fechaFinDisponible,
                         galeria = galeriaItems,
-                        servicioEvento = _activityData.value.servicioEvento
+                        servicioEvento = _activityData.value.servicioEvento,
+                        ciudad = ciudad,
+                        provincia = provincia,
+                        cuentaBancaria = _activityData.value.cuentaBancaria
                     )
                     val response = activityRepository.createActivity(activityRequest)
                     if (response.isSuccessful) {
@@ -627,11 +654,11 @@ class GenericViewModel : ViewModel() {
             ActivityCreationStep.DESTINATION_LOCATION -> _activityData.value.ubicacionDestino.isNotBlank()
             ActivityCreationStep.ACTIVITY_TYPE -> _activityData.value.tipoActividad.isNotBlank() && _activityData.value.nivelDificultad.isNotBlank()
             ActivityCreationStep.DETAILS -> _activityData.value.precio > 0 &&
-                _activityData.value.duracion.isNotBlank() &&
-                _activityData.value.maximoPersonas > 0 &&
-                _activityData.value.diasDisponibles.isNotEmpty() &&
-                _activityData.value.fechaInicioDisponible.isNotBlank() &&
-                _activityData.value.fechaFinDisponible.isNotBlank()
+                    _activityData.value.duracion.isNotBlank() &&
+                    _activityData.value.maximoPersonas > 0 &&
+                    _activityData.value.diasDisponibles.isNotEmpty() &&
+                    _activityData.value.fechaInicioDisponible.isNotBlank() &&
+                    _activityData.value.fechaFinDisponible.isNotBlank()
             ActivityCreationStep.GALLERY -> true // Opcional
             ActivityCreationStep.SERVICES -> true // Opcional
         }
@@ -649,6 +676,12 @@ class GenericViewModel : ViewModel() {
         _isSuccess.value = false
         _error.value = null
     }
+
+    fun updateCuentaBancaria(cuentaBancaria: String) {
+        _activityData.value = _activityData.value.copy(
+            cuentaBancaria = cuentaBancaria
+        )
+    }
 }
 
 // Clase de datos para mantener el estado de la actividad
@@ -661,6 +694,7 @@ data class ActivityData(
     val nivelDificultad: String = "",
     val precio: Double = 0.0,
     val duracion: String = "",
+    val cuentaBancaria: String = "",
     val maximoPersonas: Int = 1,
     val minimoPersonas: Int = 1,
     val galeria: List<GaleriaItem> = emptyList(),

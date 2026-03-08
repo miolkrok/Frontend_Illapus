@@ -3,8 +3,6 @@ package com.example.illapus.ui.navigation
 import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,12 +29,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.illapus.R
 import com.example.illapus.ui.screen.*
-import com.example.illapus.utils.TokenManager
-import com.example.illapus.utils.AuthManager
-import com.example.illapus.ui.viewmodel.ActivityViewModel
 import com.example.illapus.ui.theme.BluePrimary
 import com.example.illapus.ui.theme.BlueSecondary
 import com.example.illapus.ui.theme.White
+import com.example.illapus.ui.viewmodel.ActivityViewModel
+import com.example.illapus.utils.AuthManager
+import com.example.illapus.utils.TokenManager
 
 object AppDestinations {
     const val MAIN_ROUTE = "main"
@@ -53,6 +51,8 @@ object AppDestinations {
     //Comentarios de cada viaje.
     const val COMMENTS_PREFIX = "comments"
     const val COMMENTS_ROUTE = "$COMMENTS_PREFIX/{activityId}/{activityName}"
+
+    const val PAYMENTS_ROUTE = "payments"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -139,8 +139,19 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         NavHost(
             navController = navController,
             startDestination = AppDestinations.SPLASH_ROUTE,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
         ) {
+
+            composable(
+                route = "payments_list/{activityId}",
+                arguments = listOf(navArgument("activityId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val activityId = backStackEntry.arguments?.getString("activityId") ?: ""
+                PaymentsScreen(
+                    navController = navController,
+                )
+            }
+
             // Pantalla de Splash
             composable(AppDestinations.SPLASH_ROUTE) {
                 SplashScreen(
@@ -196,20 +207,31 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 )
             }
 
-            // ... resto de las rutas existentes
             composable(NavigationItems.Activities.route) {
-                if (isHostMode) {
-                    HostTripsScreen(navController = navController)
-                } else {
-                    ActivityScreen(
-                        navController = navController,
-                        viewModel = activitiesViewModel // Pasar el ViewModel creado a nivel de navegación
-                    )
-                }
+                ActivityScreen(
+                    navController = navController,
+                    viewModel = activitiesViewModel, // Pasar el ViewModel creado a nivel de navegación
+                    isHostMode = isHostMode,
+                    onNavigateToProfile = {
+                        navController.navigate(NavigationItems.Profile.route)
+                    }
+                )
             }
+
             composable(NavigationItems.Host.route) {
-                HostTripsScreen(navController = navController)
+                HostTripsScreen(
+                    navController = navController,
+                    isHostMode = isHostMode,
+                    onNavigateToProfile = {
+                        navController.navigate(NavigationItems.Profile.route)
+                    }
+                )
             }
+
+            composable(NavigationItems.Payments.route) {
+                PaymentsScreen(navController = navController)
+            }
+
             composable(NavigationItems.Profile.route) {
                 ProfileScreen(
                     onLogout = {
@@ -223,23 +245,12 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     isHostMode = isHostMode,
                     onToggleHostMode = { enabled ->
                         isHostMode = enabled
-                        // Navegar a la pantalla correspondiente según el modo
-                        if (enabled) {
-                            navController.navigate(NavigationItems.Host.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                        navController.navigate(NavigationItems.Activities.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
                             }
-                        } else {
-                            navController.navigate(NavigationItems.Activities.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     }
                 )
@@ -335,11 +346,12 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 object NavigationItems {
     val Activities = NavigationItem("activities", "Actividades", R.drawable.ic_activities)
     val Reservations = NavigationItem("reservations", "Reservas", R.drawable.ic_reservations)
+    val Payments = NavigationItem("payments", "Pagos", R.drawable.ic_payment)
     val Host = NavigationItem("host", "Anfitrión", R.drawable.ic_home)
     val Profile = NavigationItem("profile", "Perfil", R.drawable.ic_profile)
 
     val items = listOf(Activities, Reservations, Profile)
-    val hostModeItems = listOf(Host, Profile)
+    val hostModeItems = listOf(Host, Payments, Profile)
 }
 
 /**

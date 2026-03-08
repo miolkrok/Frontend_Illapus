@@ -45,8 +45,30 @@ data class ActivityDetailsModel(
     val updatedAt: String,
     val galeria: List<GalleryImage>,
     @SerializedName("servicioEvento")
-    val services: List<ActivityService>
-)
+    val services: List<ActivityService>,
+
+
+    // Información del usuario (nuevos campos)
+    @SerializedName("nombreUsuario")
+    val nombreUsuario: String? = null,
+    @SerializedName("apellidoUsuario")
+    val apellidoUsuario: String? = null,
+    @SerializedName("emailUsuario")
+    val emailUsuario: String? = null,
+    @SerializedName("fechaRegistroUsuario")
+    val fechaRegistroUsuario: String? = null,
+
+    // Información del proveedor
+    @SerializedName("nombreProveedor")
+    val nombreProveedor: String? = null,
+    @SerializedName("descripcionProveedor")
+    val descripcionProveedor: String? = null,
+
+    @SerializedName("cuentaBancaria")
+    val cuentaBancaria: String,
+
+
+    )
 
 /**
  * Modelo para las imágenes de la galería

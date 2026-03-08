@@ -76,12 +76,27 @@ class ActivityViewModel : BaseViewModel() {
                     applyLocalSearch() // Aplicar búsqueda si hay query activo
                 },
                 onError = { exception ->
-                    _uiState.update { currentState ->
-                        currentState.copy(
-                            isLoading = false,
-                            isRefreshing = false,
-                            errorMessage = exception.message ?: "Error desconocido"
-                        )
+                    // Si es 404, tratar como lista vacía (no hay actividades aún)
+                    if (exception.message?.contains("404") == true) {
+                        hasLoadedInitialData = true
+                        originalProperties = emptyList()
+                        filteredProperties = emptyList()
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                properties = emptyList(),
+                                isLoading = false,
+                                isRefreshing = false,
+                                errorMessage = null // No mostrar error, solo lista vacía
+                            )
+                        }
+                    } else {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isLoading = false,
+                                isRefreshing = false,
+                                errorMessage = exception.message ?: "Error desconocido"
+                            )
+                        }
                     }
                 }
             )

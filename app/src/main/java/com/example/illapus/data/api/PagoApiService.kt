@@ -6,6 +6,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface PagoApiService {
@@ -20,4 +21,11 @@ interface PagoApiService {
     // Obtener mis pagos
     @GET("pagos/usuario/mis-pagos")
     suspend fun getMisPagos(): Response<List<PagoResponse>>
+
+    @PUT("pagos/{id}")
+    suspend fun updatePagoEstado(
+        @Path("id") id: Int,
+        @Body body: Map<String, String>
+    ): Response<Any>
+
 }

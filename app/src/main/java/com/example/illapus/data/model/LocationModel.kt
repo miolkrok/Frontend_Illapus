@@ -11,5 +11,7 @@ data class LocationModel(
     val latitude: Double,
     val longitude: Double,
     val name: String = "",
-    val address: String = ""
+    val address: String = "",
+    val ciudad: String = "",
+    val provincia: String = ""
 )

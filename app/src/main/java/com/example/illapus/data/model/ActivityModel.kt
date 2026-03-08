@@ -21,7 +21,12 @@ data class ActivityRequest(
     @SerializedName("fechaInicioDisponible") val fechaInicioDisponible: String,
     @SerializedName("fechaFinDisponible") val fechaFinDisponible: String,
     @SerializedName("galeria") val galeria: List<GaleriaItem>,
-    @SerializedName("servicioEvento") val servicioEvento: List<ServicioItem>
+    @SerializedName("servicioEvento") val servicioEvento: List<ServicioItem>,
+
+    @SerializedName("ciudad") val ciudad: String = "",
+    @SerializedName("provincia") val provincia: String = "",
+
+    @SerializedName("cuentaBancaria") val cuentaBancaria: String = ""
 )
 
 data class ActivityResponse(
@@ -44,7 +49,8 @@ data class ActivityResponse(
     @SerializedName("fechaInicioDisponible") val fechaInicioDisponible: String,
     @SerializedName("fechaFinDisponible") val fechaFinDisponible: String,
     @SerializedName("galeria") val galeria: List<GaleriaResponse>,
-    @SerializedName("servicioEvento") val servicioEvento: List<ServicioResponse>
+    @SerializedName("servicioEvento") val servicioEvento: List<ServicioResponse>,
+    @SerializedName("cuentaBancaria") val cuentaBancaria: String? = null,
 )
 
 data class GaleriaItem(

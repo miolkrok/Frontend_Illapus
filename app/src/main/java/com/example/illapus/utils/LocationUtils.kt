@@ -24,7 +24,9 @@ object LocationUtils {
                 latitude = jsonObject.get("latitude")?.asDouble ?: 0.0,
                 longitude = jsonObject.get("longitude")?.asDouble ?: 0.0,
                 name = jsonObject.get("name")?.asString ?: "",
-                address = jsonObject.get("address")?.asString ?: ""
+                address = jsonObject.get("address")?.asString ?: "",
+                ciudad = jsonObject.get("ciudad")?.asString ?: "",
+                provincia = jsonObject.get("provincia")?.asString ?: ""
             )
         } catch (e: Exception) {
             Log.e("LocationUtils", "Error parsing location JSON: $e")

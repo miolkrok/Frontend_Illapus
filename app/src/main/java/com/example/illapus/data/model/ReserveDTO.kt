@@ -28,3 +28,15 @@ data class ReserveCreationResponse(
     val fechaCreacion: String,
     val fechaActualizacion: String
 )
+
+data class ReserveCreationWrapper(
+    val message: String?,
+    val reserva: ReserveCreationResponse?,
+    val validacionesExternas: Boolean?
+)
+
+data class ReserveApiResponse (
+    val message: String,
+    val reserva: ReserveCreationResponse,
+    val validacionesExternas: Boolean
+)

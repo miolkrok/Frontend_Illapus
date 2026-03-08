@@ -27,6 +27,7 @@ data class PropertyDetailsModel(
     val destinationLocation: LocationModel, // Ubicación de destino
     val host: HostModel,
     val duration: String,
+    val cuentaBancaria: String = "",
     val availability: String,
     val activityType: String,
     val difficultyLevel: String,

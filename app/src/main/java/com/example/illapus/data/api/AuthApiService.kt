@@ -21,6 +21,7 @@ interface AuthApiService {
     @GET("auth/me")
     suspend fun getUserInfo(): UserInfoResponse
 
+    // Convertir usuario de CLIENTE a PROVEEDOR
     @PUT("usuarios/convertir-proveedor")
     suspend fun convertirAProveedor(): Response<Map<String, Any>>
 
