@@ -298,7 +298,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
-                            .padding(bottom = if (uiState.isProveedor) 45.dp else 0.dp) // Espacio extra si hay FAB
+                            .padding(bottom = if (uiState.isProveedor) 80.dp else 16.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.ExitToApp,
@@ -327,7 +327,7 @@ fun ProfileScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 32.dp),
+                        .padding(bottom = 16.dp),
                     shape = CircleShape,
                     elevation = FloatingActionButtonDefaults.elevation(
                         defaultElevation = 6.dp,
@@ -350,7 +350,7 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         // Texto que cambia según el modo actual
                         Text(
-                            text = if (isHostMode) "Cambiar modo viajero" else "Cambiar modo anfitrión",
+                            text = if (isHostMode) "Cambiar modo Viajero" else "Cambiar modo Operador turístico",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimary
                         )

@@ -103,6 +103,48 @@ class ActivityDetailsViewModel : BaseViewModel() {
     private val activityRepository = ActivityRepository(ApiClient.activityService)
     private val reservationRepository = ReservationRepository(ApiClient.reservaService)
 
+    // Estado para el BottomSheet de actualizar disponibilidad
+    private val _isUpdateSheetVisible = MutableStateFlow(false)
+    val isUpdateSheetVisible: StateFlow<Boolean> = _isUpdateSheetVisible.asStateFlow()
+
+    private val _isUpdatingDates = MutableStateFlow(false)
+    val isUpdatingDates: StateFlow<Boolean> = _isUpdatingDates.asStateFlow()
+
+    fun showUpdateAvailabilitySheet() {
+        _isUpdateSheetVisible.value = true
+    }
+
+    fun hideUpdateAvailabilitySheet() {
+        _isUpdateSheetVisible.value = false
+    }
+
+    fun updateAvailabilityDates(fechaInicio: String, fechaFin: String) {
+        val activity = _activityDetails.value ?: return
+        val activityId = activity.id.toIntOrNull() ?: return
+
+        viewModelScope.launch {
+            _isUpdatingDates.value = true
+            try {
+                val body = mapOf(
+                    "fechaInicioDisponible" to fechaInicio,
+                    "fechaFinDisponible" to fechaFin
+                )
+                val response = ApiClient.activityService.updateActivityDates(activityId, body)
+                if (response.isSuccessful) {
+                    _reservationResult.value = "Fechas actualizadas correctamente"
+                    _isUpdateSheetVisible.value = false
+                    loadActivityDetails(activity.id)
+                } else {
+                    _error.value = "Error al actualizar fechas"
+                }
+            } catch (e: Exception) {
+                _error.value = "Error de conexión: ${e.message}"
+            } finally {
+                _isUpdatingDates.value = false
+            }
+        }
+    }
+
     /**
      * Carga los detalles de una actividad específica desde la API
      * @param activityId El ID de la actividad a cargar
@@ -118,23 +160,46 @@ class ActivityDetailsViewModel : BaseViewModel() {
         _isLoading.value = true
         _error.value = null
 
-        // Usar el método del BaseViewModel para manejo automático de errores
-        launchApiCall(
-            apiCall = { activityRepository.getActivityDetails(id) },
-            onSuccess = { activityDetails ->
-                val uiModel = mapActivityToPropertyDetails(activityDetails)
-                _activityDetails.value = uiModel
+        viewModelScope.launch {
+            try {
+                val response = activityRepository.getActivityDetails(id)
 
-                // Inicializar el precio total con el precio base por una persona
-                updateTotalPrice()
+                if (response.isSuccessful) {
+                    val activityDetails = response.body()
 
-                _isLoading.value = false
-            },
-            onError = { exception ->
-                _error.value = "Error al cargar los detalles: ${exception.message}"
+                    if (activityDetails != null) {
+                        // ══════ DEBUG ══════
+                        Log.d("DEBUG_IMG", "══════════════════════════════════════")
+                        Log.d("DEBUG_IMG", "Actividad: ${activityDetails.title}")
+                        Log.d("DEBUG_IMG", "Galería es null? ${activityDetails.galeria == null}")
+                        Log.d("DEBUG_IMG", "Galería size: ${activityDetails.galeria?.size ?: -1}")
+                        activityDetails.galeria?.forEachIndexed { i, img ->
+                            Log.d("DEBUG_IMG", "  [$i] id=${img.id} urlFoto=${img.urlFoto?.take(80)} primary=${img.isPrimaryImage}")
+                        }
+                        Log.d("DEBUG_IMG", "Servicios es null? ${activityDetails.services == null}")
+                        Log.d("DEBUG_IMG", "Servicios size: ${activityDetails.services?.size ?: -1}")
+                        Log.d("DEBUG_IMG", "══════════════════════════════════════")
+                        // ══════ FIN DEBUG ══════
+
+                        val uiModel = mapActivityToPropertyDetails(activityDetails)
+                        _activityDetails.value = uiModel
+                        updateTotalPrice()
+                    } else {
+                        Log.e("DEBUG_IMG", "Response body es NULL")
+                        _error.value = "Respuesta vacía del servidor"
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                    Log.e("DEBUG_IMG", "Response error: ${response.code()} - $errorBody")
+                    _error.value = "Error al cargar los detalles: ${response.message()}"
+                }
+            } catch (e: Exception) {
+                Log.e("DEBUG_IMG", "Excepción cargando detalles", e)
+                _error.value = "Error al cargar los detalles: ${e.message}"
+            } finally {
                 _isLoading.value = false
             }
-        )
+        }
     }
 
     /**
@@ -165,7 +230,7 @@ class ActivityDetailsViewModel : BaseViewModel() {
                 if (isNotEmpty()) append(" ")
                 append(activity.apellidoUsuario)
             }
-        }.ifEmpty { "Anfitrión" }
+        }.ifEmpty { "Operador Turistico" }
 
 
         // Calcular años activo
@@ -195,17 +260,28 @@ class ActivityDetailsViewModel : BaseViewModel() {
             provincia = provinciaDestino   // Usar la provincia de destino
         )
 
-        // Ordenar imágenes: principal primero
-        val sortedImages = activity.galeria
-            ?.sortedByDescending { it.isPrimaryImage }
-            ?.map { it.displayImage ?: "" }
-            ?: emptyList()
+        // Ordenar imágenes: principal primero, filtrar nulas/vacías
+        val sortedImages = if (!activity.galeria.isNullOrEmpty()) {
+            activity.galeria
+                .sortedByDescending { it.isPrimaryImage }
+                .mapNotNull { it.displayImage }
+                .filter { it.isNotBlank() }
+        } else {
+            emptyList()
+        }
+
+        Log.d("ActivityDetailsVM", "Galería size: ${activity.galeria?.size ?: 0}")
+        activity.galeria?.forEach { img ->
+            Log.d("ActivityDetailsVM", "  Imagen id=${img.id} urlFoto=${img.urlFoto} imageBin=${if (img.imageBinary.isNullOrEmpty()) "null" else "presente(${img.imageBinary!!.length})"}")
+        }
+        Log.d("ActivityDetailsVM", "sortedImages (final): $sortedImages")
 
         // Extraer nombres de servicios
         val services = activity.services?.map { it.serviceName } ?: emptyList()
 
         return PropertyDetailsModel(
             id = activity.id.toString(),
+            providerId = activity.providerId,
             title = activity.title,
             description = activity.description,
             images = sortedImages,
@@ -344,7 +420,7 @@ class ActivityDetailsViewModel : BaseViewModel() {
      * Incrementa la cantidad de personas en la reserva
      */
     fun incrementGuestCount() {
-        val maxGuests = _activityDetails.value?.maxPeople ?: 10
+        val maxGuests = _cupoDisponible.value ?: _activityDetails.value?.maxPeople ?: 10
         if (_guestCount.value < maxGuests) {
             _guestCount.value += 1
             updateTotalPrice()
@@ -408,11 +484,11 @@ class ActivityDetailsViewModel : BaseViewModel() {
 
                         if (cupo <= 0) {
                             _fechaBloqueada.value = true
-                            _cupoInfo.value = "No hay cupo para esta fecha ($reservadas/$max personas reservadas)"
+                            _cupoInfo.value = "⛔ No hay cupo para esta fecha ($reservadas/$max personas reservadas)"
                         } else if (cupo < _guestCount.value) {
-                            _cupoInfo.value = "Solo quedan $cupo cupos. Reduce el número de personas."
+                            _cupoInfo.value = "⚠️ Solo quedan $cupo cupos. Reduce el número de personas."
                         } else {
-                            _cupoInfo.value = "Disponible: $cupo cupos restantes ($reservadas/$max)"
+                            _cupoInfo.value = "✅ Disponible: $cupo cupos restantes ($reservadas/$max)"
                         }
 
                         Log.d("ActivityDetailsVM", "Disponibilidad: $reservadas/$max reservadas, $cupo disponibles")
@@ -583,8 +659,8 @@ class ActivityDetailsViewModel : BaseViewModel() {
                     return@launch
                 }
 
-                val wrapper = reservaResponse.body()
-                val reservaCreada = wrapper?.reserva
+                val responseBody = reservaResponse.body()
+                val reservaCreada = responseBody?.reserva
                 if (reservaCreada == null) {
                     _error.value = "Error: respuesta vacía del servidor al crear reserva"
                     _isCreatingReservation.value = false

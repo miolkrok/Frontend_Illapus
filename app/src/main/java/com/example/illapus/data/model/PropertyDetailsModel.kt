@@ -20,6 +20,7 @@ data class PropertyDetailsModel(
     val id: String,
     val title: String,
     val description: String,
+    val providerId: Int = 0,
     val images: List<String>, // Lista de imágenes Base64
     val rating: Float = 0f, // Por ahora no viene en la API
     val price: Double,

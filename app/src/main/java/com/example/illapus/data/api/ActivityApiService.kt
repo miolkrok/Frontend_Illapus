@@ -17,7 +17,7 @@ interface ActivityApiService {
     suspend fun createActivity(@Body activityRequest: ActivityRequest): Response<Any>
 
     @GET("actividades/{id}")
-    suspend fun getActivityDetails(@Path("id") activityId: Int): ActivityDetailsModel
+    suspend fun getActivityDetails(@Path("id") activityId: Int): Response<ActivityDetailsModel>
 
     @GET("actividades/mis-actividades")
     suspend fun getHostActivities(): List<ActivityDetailsModel>
@@ -30,6 +30,11 @@ interface ActivityApiService {
         @Path("id") activityId: Int, @Body activityRequest: ActivityRequest
     ): Response<Any>
 
+    @PUT("actividades/{id}")
+    suspend fun updateActivityDates(
+        @Path("id") id: Int,
+        @Body body: Map<String, String>
+    ): Response<Any>
     @DELETE("actividades/{id}/galeria/{galeriaId}")
     suspend fun deleteGalleryImage(
         @Path("id") activityId: Int, @Path("galeriaId") galleryId: Int

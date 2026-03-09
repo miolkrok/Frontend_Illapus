@@ -1,26 +1,47 @@
 package com.example.illapus.ui.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.illapus.data.model.ReserveCreationResponse
 import com.example.illapus.ui.theme.White
 
 @Composable
 fun ReservationCard(
     reservation: ReserveCreationResponse,
+    activityTitle: String = "",
     onDeleteReservation: (Int) -> Unit,
     isDeleting: Boolean,
     status: String,
@@ -47,17 +68,20 @@ fun ReservationCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Reserva #${reservation.id}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    StatusDropdownChip(
-                        status = status,
-                        onStatusSelected = onStatusSelected
-                    )
+//                    Text(
+//                        text = "Reserva #${reservation.id}",
+//                        style = MaterialTheme.typography.titleMedium,
+//                        fontWeight = FontWeight.Bold,
+//                        color = MaterialTheme.colorScheme.onSurface
+//                    )
+                    if (activityTitle.isNotBlank()) {
+                        Text(
+                            text = activityTitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
                 IconButton(
                     onClick = { showDeleteDialog = true },
@@ -141,65 +165,4 @@ fun ReservationCard(
         )
     }
 }
-
-@Composable
-fun StatusDropdownChip(
-    status: String,
-    enabled: Boolean = true,
-    onStatusSelected: (String) -> Unit
-) {
-    val options = listOf("APROBADA", "PENDIENTE", "CANCELADA")
-    var expanded by remember { mutableStateOf(false) }
-
-    val (backgroundColor, textColor) = when (status.uppercase()) {
-        "PENDIENTE" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.secondary
-        "APROBADA", "CONFIRMADA" -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
-        "CANCELADA" -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.primary
-    }
-
-    Box {
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = backgroundColor
-        ) {
-            Row(
-                modifier = Modifier
-                    .clickable(enabled = enabled) { expanded = true }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = status.uppercase(),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = textColor
-                )
-                Spacer(Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = textColor,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { opt ->
-                DropdownMenuItem(
-                    text = { Text(opt) },
-                    onClick = {
-                        expanded = false
-                        onStatusSelected(opt)
-                    }
-                )
-            }
-        }
-    }
-}
-
 

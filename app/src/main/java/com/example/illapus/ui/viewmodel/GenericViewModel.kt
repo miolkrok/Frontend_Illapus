@@ -120,8 +120,12 @@ class GenericViewModel : ViewModel() {
             _error.value = null
 
             try {
-                val activityDetails = activityRepository.getActivityDetails(activityId)
-                mapActivityDetailsToData(activityDetails)
+                val response = activityRepository.getActivityDetails(activityId)
+                if (response.isSuccessful && response.body() != null) {
+                    mapActivityDetailsToData(response.body()!!)
+                } else {
+                    _error.value = "Error al cargar la actividad"
+                }
                 _isLoading.value = false
             } catch (e: Exception) {
                 _error.value = "Error al cargar la actividad: ${e.message}"
@@ -145,14 +149,14 @@ class GenericViewModel : ViewModel() {
             duracion = details.duration,
             maximoPersonas = details.maxPeople,
             minimoPersonas = details.minPeople,
-            servicioEvento = details.services.map { ServicioItem(it.serviceName) },
+            servicioEvento = (details.services ?: emptyList()).map { ServicioItem(it.serviceName) },
             diasDisponibles = details.availability.split(", ").filter { it.isNotBlank() },
-            fechaInicioDisponible = details.startDate,
-            fechaFinDisponible = details.endDate
+            fechaInicioDisponible = details.startDate ?: "",
+            fechaFinDisponible = details.endDate ?: ""
         )
 
         // Convertir galería a imágenes locales (para mostrar en UI)
-        val localImages = details.galeria.map { galeriaItem ->
+        val localImages = (details.galeria ?: emptyList()).map { galeriaItem ->
             LocalImageData(
                 uri = "",
                 nombreArchivo = galeriaItem.fileName,
@@ -164,7 +168,7 @@ class GenericViewModel : ViewModel() {
         _localImages.value = localImages
 
         // Guardar galería original y limpiar eliminaciones previas
-        _originalGalleryResponses.value = details.galeria.map {
+        _originalGalleryResponses.value = (details.galeria ?: emptyList()).map {
             GaleriaResponse(
                 id = it.id,
                 urlFoto = it.urlFoto,
@@ -178,12 +182,12 @@ class GenericViewModel : ViewModel() {
         _galleryIdsToDelete.value = emptyList()
 
         // Guardar servicios originales (nombres)
-        _originalServices.value = details.services.map { it.serviceName }
+        _originalServices.value = (details.services ?: emptyList()).map { it.serviceName }
         _serviceIdsToDelete.value = emptyList() // Limpiar eliminaciones previas
 
         // Corrige aquí: si details.services NO es List<ServicioResponse>, mapea manualmente
         // Si es List<ActivityService> o similar, mapea a ServicioResponse
-        _originalServiceResponses.value = details.services.map {
+        _originalServiceResponses.value = (details.services ?: emptyList()).map {
             ServicioResponse(
                 id = it.id,
                 listaServicio = it.serviceName // o it.listaServicio según el modelo

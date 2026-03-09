@@ -168,12 +168,16 @@ fun GenericScreen(
                                 when (currentStep) {
                                     ActivityCreationStep.BASIC_INFO ->
                                         activityData.titulo.isNotBlank() && activityData.descripcion.isNotBlank()
+
                                     ActivityCreationStep.DEPARTURE_LOCATION ->
                                         activityData.ubicacionSalida.isNotBlank()
+
                                     ActivityCreationStep.DESTINATION_LOCATION ->
                                         activityData.ubicacionDestino.isNotBlank()
+
                                     ActivityCreationStep.ACTIVITY_TYPE ->
                                         activityData.tipoActividad.isNotBlank() && activityData.nivelDificultad.isNotBlank()
+
                                     ActivityCreationStep.DETAILS ->
                                         activityData.precio > 0 &&
                                                 activityData.duracion.isNotBlank() &&
@@ -181,6 +185,7 @@ fun GenericScreen(
                                                 activityData.diasDisponibles.isNotEmpty() &&
                                                 activityData.fechaInicioDisponible.isNotBlank() &&
                                                 activityData.fechaFinDisponible.isNotBlank()
+
                                     ActivityCreationStep.GALLERY -> true
                                     ActivityCreationStep.SERVICES -> true
                                 }
@@ -456,7 +461,8 @@ fun DetailsContent(
     var cuentaBancaria by remember { mutableStateOf(activityData.cuentaBancaria) }
 
     // Estados para los días de la semana
-    val diasDeLaSemana = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
+    val diasDeLaSemana =
+        listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
     var diasSeleccionados by remember { mutableStateOf(activityData.diasDisponibles) }
     var fechaInicio by remember { mutableStateOf(activityData.fechaInicioDisponible) }
     var fechaFin by remember { mutableStateOf(activityData.fechaFinDisponible) }
@@ -641,6 +647,44 @@ fun DetailsContent(
         }
 
         item {
+            // Variables para campos separados - parsear del string guardado
+            var banco by remember {
+                mutableStateOf(
+                    cuentaBancaria.lines().find { it.startsWith("Banco:") }
+                        ?.removePrefix("Banco:")?.trim() ?: ""
+                )
+            }
+            var nombreTitular by remember {
+                mutableStateOf(
+                    cuentaBancaria.lines().find { it.startsWith("Titular:") }
+                        ?.removePrefix("Titular:")?.trim() ?: ""
+                )
+            }
+            var cedula by remember {
+                mutableStateOf(
+                    cuentaBancaria.lines().find { it.startsWith("Cédula:") }
+                        ?.removePrefix("Cédula:")?.trim() ?: ""
+                )
+            }
+            var numeroCuenta by remember {
+                mutableStateOf(
+                    cuentaBancaria.lines().find { it.startsWith("Cuenta:") }
+                        ?.removePrefix("Cuenta:")?.trim() ?: ""
+                )
+            }
+
+            // Función para concatenar y guardar
+            fun actualizarCuentaBancaria() {
+                val datos = buildString {
+                    if (banco.isNotBlank()) appendLine("Banco: $banco")
+                    if (nombreTitular.isNotBlank()) appendLine("Titular: $nombreTitular")
+                    if (cedula.isNotBlank()) appendLine("Cédula: $cedula")
+                    if (numeroCuenta.isNotBlank()) appendLine("Cuenta: $numeroCuenta")
+                }.trim()
+                cuentaBancaria = datos
+                onUpdateCuentaBancaria(datos)
+            }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -650,51 +694,72 @@ fun DetailsContent(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Banco Pichincha",
-                        style = MaterialTheme.typography.labelMedium,
+                        text = "Datos para recibir pagos",
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
+                    // Banco
                     OutlinedTextField(
-                        value = cuentaBancaria,
+                        value = banco,
                         onValueChange = {
-                            cuentaBancaria = it
-                            onUpdateCuentaBancaria(it)
+                            banco = it
+                            actualizarCuentaBancaria()
                         },
-                        label = { Text("Número de cuenta de ahorros") },
-                        placeholder = { Text("Ej: 1234567890") },
+                        label = { Text("Banco") },
+                        placeholder = { Text("Ej: Banco Pichincha") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        supportingText = {
-                            Text(
-                                text = "Los clientes depositarán el pago a esta cuenta",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        isError = cuentaBancaria.isNotBlank() && (cuentaBancaria.length < 10 || cuentaBancaria.length > 20)
+                        singleLine = true
                     )
 
-                    if (cuentaBancaria.isNotBlank() && (cuentaBancaria.length < 10 || cuentaBancaria.length > 20)) {
-                        Text(
-                            text = "La cuenta debe tener entre 10 y 20 dígitos",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                        )
-                    }
+                    // Nombre del titular
+                    OutlinedTextField(
+                        value = nombreTitular,
+                        onValueChange = {
+                            nombreTitular = it
+                            actualizarCuentaBancaria()
+                        },
+                        label = { Text("Nombre del titular") },
+                        placeholder = { Text("Ej: Juan Pérez") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    // Cédula
+                    OutlinedTextField(
+                        value = cedula,
+                        onValueChange = {
+                            cedula = it
+                            actualizarCuentaBancaria()
+                        },
+                        label = { Text("Cédula / RUC") },
+                        placeholder = { Text("Ej: 1712345678") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+
+                    // Número de cuenta
+                    OutlinedTextField(
+                        value = numeroCuenta,
+                        onValueChange = {
+                            numeroCuenta = it
+                            actualizarCuentaBancaria()
+                        },
+                        label = { Text("Número de cuenta") },
+                        placeholder = { Text("Ej: 2201234567") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
 
                     Text(
-                        text = "Importante: Asegúrate de que el número de cuenta sea correcto para recibir los pagos de tus clientes.",
+                        text = "Los clientes verán estos datos para realizar el depósito",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -822,12 +887,17 @@ fun GalleryContent(
                                             .align(Alignment.BottomCenter)
                                             .padding(4.dp),
                                         colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                            containerColor = MaterialTheme.colorScheme.primary.copy(
+                                                alpha = 0.8f
+                                            )
                                         )
                                     ) {
                                         Text(
                                             text = "Principal",
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                            modifier = Modifier.padding(
+                                                horizontal = 8.dp,
+                                                vertical = 2.dp
+                                            ),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onPrimary
                                         )

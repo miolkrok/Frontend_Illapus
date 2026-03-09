@@ -347,7 +347,7 @@ object NavigationItems {
     val Activities = NavigationItem("activities", "Actividades", R.drawable.ic_activities)
     val Reservations = NavigationItem("reservations", "Reservas", R.drawable.ic_reservations)
     val Payments = NavigationItem("payments", "Pagos", R.drawable.ic_payment)
-    val Host = NavigationItem("host", "Anfitrión", R.drawable.ic_home)
+    val Host = NavigationItem("host", "Operador", R.drawable.ic_home)
     val Profile = NavigationItem("profile", "Perfil", R.drawable.ic_profile)
 
     val items = listOf(Activities, Reservations, Profile)

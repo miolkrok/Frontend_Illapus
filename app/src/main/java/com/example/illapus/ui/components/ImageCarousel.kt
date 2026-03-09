@@ -38,7 +38,10 @@ fun ImageCarousel(
 ) {
     if (images.isEmpty()) return
 
+    android.util.Log.d("ImageCarousel", "Renderizando carrusel con ${images.size} imágenes: ${images.map { if (it.length > 50) it.take(50) + "..." else it }}")
+
     val pagerState = rememberPagerState(pageCount = { images.size })
+    // ... resto igual
 
     Box(
         modifier = modifier

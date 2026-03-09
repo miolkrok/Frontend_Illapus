@@ -91,14 +91,11 @@ import com.example.illapus.ui.viewmodel.ActivityDetailsViewModel
 import com.example.illapus.ui.viewmodel.OpinionViewModel
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material3.SelectableDates
+import com.example.illapus.utils.TokenManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -308,32 +305,6 @@ fun ActivityDetailsScreen(
                                             .fillMaxWidth()
                                             .padding(16.dp)
                                     ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Star, // Cambia por un ícono de banco si tienes
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = "Banco Pichincha",
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                        Text(
-                                            text = "Cuenta de Ahorros",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-
                                         Text(
                                             text = details.cuentaBancaria,
                                             style = MaterialTheme.typography.headlineSmall,
@@ -729,7 +700,9 @@ fun ActivityDetailsScreen(
                         }
                     }
 
-                    // Footer para reserva
+                    val currentUserId = TokenManager.getUserId()
+                    val isOwner = currentUserId == details.providerId
+
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -759,13 +732,130 @@ fun ActivityDetailsScreen(
                                     modifier = Modifier.widthIn(max = 150.dp)
                                 )
                             }
-                            Button(
-                                onClick = { viewModel.showReservationBottomSheet() },
+                            if (isOwner) {
+                                Button(
+                                    onClick = { viewModel.showUpdateAvailabilitySheet() },
+                                    modifier = Modifier.height(48.dp).wrapContentWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondary
+                                    )
+                                ) {
+                                    Text(text = "Actualizar fechas")
+                                }
+                            } else {
+                                Button(
+                                    onClick = { viewModel.showReservationBottomSheet() },
+                                    modifier = Modifier.height(48.dp).wrapContentWidth()
+                                ) {
+                                    Text(text = "Reservar")
+                                }
+                            }
+                        }
+                    }
+
+                    val isUpdateSheetVisible by viewModel.isUpdateSheetVisible.collectAsState()
+                    val isUpdatingDates by viewModel.isUpdatingDates.collectAsState()
+
+                    if (isUpdateSheetVisible) {
+                        ModalBottomSheet(
+                            onDismissRequest = { viewModel.hideUpdateAvailabilitySheet() },
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                        ) {
+                            var newStartDate by remember { mutableStateOf("") }
+                            var newEndDate by remember { mutableStateOf("") }
+                            var showStartPicker by remember { mutableStateOf(false) }
+                            var showEndPicker by remember { mutableStateOf(false) }
+
+                            Column(
                                 modifier = Modifier
-                                    .height(48.dp)
-                                    .wrapContentWidth()
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text(text = "Reservar")
+                                Text(
+                                    "Actualizar Disponibilidad",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.height(24.dp))
+
+                                OutlinedCard(
+                                    onClick = { showStartPicker = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(16.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(if (newStartDate.isBlank()) "Fecha inicio" else newStartDate)
+                                        Icon(Icons.Default.CalendarToday, null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
+
+                                OutlinedCard(
+                                    onClick = { showEndPicker = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(16.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(if (newEndDate.isBlank()) "Fecha fin" else newEndDate)
+                                        Icon(Icons.Default.CalendarToday, null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+
+                                Spacer(Modifier.height(24.dp))
+
+                                Button(
+                                    onClick = { viewModel.updateAvailabilityDates(newStartDate, newEndDate) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = newStartDate.isNotBlank() && newEndDate.isNotBlank() && !isUpdatingDates
+                                ) {
+                                    if (isUpdatingDates) {
+                                        CircularProgressIndicator(Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                                        Spacer(Modifier.width(8.dp))
+                                    }
+                                    Text("Guardar cambios")
+                                }
+
+                                Spacer(Modifier.height(16.dp))
+                            }
+
+                            if (showStartPicker) {
+                                val state = rememberDatePickerState()
+                                DatePickerDialog(
+                                    onDismissRequest = { showStartPicker = false },
+                                    confirmButton = {
+                                        TextButton(onClick = {
+                                            state.selectedDateMillis?.let {
+                                                newStartDate = LocalDate.ofEpochDay(it / (24 * 60 * 60 * 1000)).toString()
+                                            }
+                                            showStartPicker = false
+                                        }) { Text("OK") }
+                                    },
+                                    dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text("Cancelar") } }
+                                ) { DatePicker(state = state) }
+                            }
+
+                            if (showEndPicker) {
+                                val state = rememberDatePickerState()
+                                DatePickerDialog(
+                                    onDismissRequest = { showEndPicker = false },
+                                    confirmButton = {
+                                        TextButton(onClick = {
+                                            state.selectedDateMillis?.let {
+                                                newEndDate = LocalDate.ofEpochDay(it / (24 * 60 * 60 * 1000)).toString()
+                                            }
+                                            showEndPicker = false
+                                        }) { Text("OK") }
+                                    },
+                                    dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text("Cancelar") } }
+                                ) { DatePicker(state = state) }
                             }
                         }
                     }
@@ -851,13 +941,15 @@ fun ActivityDetailsScreen(
                         textAlign = TextAlign.Center
                     )
 
+                    val cupoDisponible by viewModel.cupoDisponible.collectAsState()
+
                     IconButton(
                         onClick = { viewModel.incrementGuestCount() },
                         modifier = Modifier
                             .size(48.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primaryContainer),
-                        enabled = guestCount < (activityDetails?.maxPeople ?: 10)
+                        enabled = guestCount < (cupoDisponible ?: activityDetails?.maxPeople ?: 10)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -912,25 +1004,28 @@ fun ActivityDetailsScreen(
                     }
                 }
 
-                val allowedDays = remember(activityDetails?.availability) {
-                    parseAllowedDays(activityDetails?.availability ?: "")
-                }
-
                 // DatePicker
                 if (showDatePicker) {
+                    val today = LocalDate.now().toEpochDay() * 24 * 60 * 60 * 1000
                     val datePickerState = rememberDatePickerState(
                         initialSelectedDateMillis = selectedDate?.toEpochDay()
                             ?.times(24 * 60 * 60 * 1000)
                             ?: System.currentTimeMillis(),
-                        selectableDates = object : SelectableDates {
+                        selectableDates = object : androidx.compose.material3.SelectableDates {
                             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                                if (allowedDays.isEmpty()) return false
+                                // No permitir fechas pasadas
+                                if (utcTimeMillis < today) return false
 
-                                val localDate = Instant.ofEpochMilli(utcTimeMillis)
-                                    .atZone(ZoneId.of("UTC"))
-                                    .toLocalDate()
+                                // Solo permitir días de la semana que están en disponibilidad
+                                val date = LocalDate.ofEpochDay(utcTimeMillis / (24 * 60 * 60 * 1000))
+                                val dayName = date.dayOfWeek.getDisplayName(
+                                    java.time.format.TextStyle.FULL,
+                                    Locale("es", "ES")
+                                ).replaceFirstChar { it.uppercase() }
 
-                                return localDate.dayOfWeek in allowedDays
+                                // Verificar si el día está en la disponibilidad de la actividad
+                                val disponibilidad = activityDetails?.availability ?: ""
+                                return disponibilidad.contains(dayName, ignoreCase = true)
                             }
                         }
                     )
@@ -1386,22 +1481,4 @@ private fun OpinionPreviewItem(opinion: OpinionResponse) {
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(color = Color(0xFFF0F0F0))
     }
-}
-
-private fun parseAllowedDays(raw: String): Set<DayOfWeek> {
-    return raw.split(",")
-        .map { it.trim().lowercase() }
-        .mapNotNull { d ->
-            when (d) {
-                "lunes" -> DayOfWeek.MONDAY
-                "martes" -> DayOfWeek.TUESDAY
-                "miércoles", "miercoles" -> DayOfWeek.WEDNESDAY
-                "jueves" -> DayOfWeek.THURSDAY
-                "viernes" -> DayOfWeek.FRIDAY
-                "sábado", "sabado" -> DayOfWeek.SATURDAY
-                "domingo" -> DayOfWeek.SUNDAY
-                else -> null
-            }
-        }
-        .toSet()
 }

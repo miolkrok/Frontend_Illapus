@@ -11,7 +11,7 @@ import retrofit2.Response
 class ActivityRepository(
     private val activityApiService: ActivityApiService
 ) {
-    suspend fun getActivityDetails(id: Int): ActivityDetailsModel {
+    suspend fun getActivityDetails(id: Int): Response<ActivityDetailsModel> {
         return activityApiService.getActivityDetails(id)
     }
 

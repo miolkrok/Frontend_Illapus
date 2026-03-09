@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.illapus.data.model.ReserveCreationResponse
 import com.example.illapus.ui.components.ReservationCard
+import com.example.illapus.ui.viewmodel.ActivityViewModel
 import com.example.illapus.ui.viewmodel.ReservationsViewModel
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
@@ -34,11 +35,18 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ReservationsScreen(
     viewModel: ReservationsViewModel = viewModel(),
+    activityViewModel: ActivityViewModel = viewModel(),
     onNavigateToComments: ((actividadId: Int) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = uiState.isLoading)
+    val activityUiState by activityViewModel.uiState.collectAsState()
+
+    // Crear mapa de títulos de actividades (actividadId -> título)
+    val activityTitlesMap = remember(activityUiState.properties) {
+        activityUiState.properties.associate { it.id to it.title }
+    }
 
     // Mostrar Snackbar cuando hay mensaje de éxito
     LaunchedEffect(uiState.successMessage) {
@@ -83,7 +91,8 @@ fun ReservationsScreen(
                                 viewModel.deleteReservation(reservationId)
                             },
                             isDeletingReservation = uiState.isDeletingReservation,
-                            onNavigateToComments = onNavigateToComments
+                            onNavigateToComments = onNavigateToComments,
+                            activityTitlesMap = activityTitlesMap
                         )
                     }
                 }
@@ -180,7 +189,8 @@ private fun ReservationsList(
     reservations: List<ReserveCreationResponse>,
     onDeleteReservation: (Int) -> Unit,
     isDeletingReservation: Int?,
-    onNavigateToComments: ((Int) -> Unit)? = null
+    onNavigateToComments: ((Int) -> Unit)? = null,
+    activityTitlesMap: Map<Int, String> = emptyMap()
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -188,8 +198,10 @@ private fun ReservationsList(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(reservations, key = { it.id }) { reservation ->
+            val activityTitle = activityTitlesMap[reservation.actividadId] ?: "Actividad ${reservation.actividadId}"
             ReservationCard(
                 reservation = reservation,
+                activityTitle = activityTitle,
                 onDeleteReservation = onDeleteReservation,
                 isDeleting = isDeletingReservation == reservation.id,
                 status = reservation.estado,

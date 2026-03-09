@@ -6,46 +6,46 @@ import com.google.gson.annotations.SerializedName
  * Modelo para los detalles completos de una actividad
  */
 data class ActivityDetailsModel(
-    val id: Int,
+    val id: Int = 0,
     @SerializedName("proveedorId")
-    val providerId: Int,
+    val providerId: Int = 0,
     @SerializedName("titulo")
-    val title: String,
+    val title: String = "",
     @SerializedName("descripcion")
-    val description: String,
+    val description: String = "",
     @SerializedName("ubicacionDestino")
-    val destinationLocationJson: String,
+    val destinationLocationJson: String = "",
     @SerializedName("ubicacionSalida")
-    val departureLocationJson: String,
+    val departureLocationJson: String = "",
     @SerializedName("tipoActividad")
-    val activityType: String,
+    val activityType: String = "",
     @SerializedName("nivelDificultad")
-    val difficultyLevel: String,
+    val difficultyLevel: String = "",
     @SerializedName("precio")
-    val price: Double,
+    val price: Double = 0.0,
     @SerializedName("duracion")
-    val duration: String,
+    val duration: String = "",
     @SerializedName("disponibilidad")
-    val availability: String,
+    val availability: String = "",
     @SerializedName("fechaInicioDisponible")
-    val startDate: String,
+    val startDate: String? = null,
     @SerializedName("fechaFinDisponible")
-    val endDate: String,
+    val endDate: String? = null,
     @SerializedName("minimoPersonas")
-    val minPeople: Int,
+    val minPeople: Int = 0,
     @SerializedName("maximoPersonas")
-    val maxPeople: Int,
-    val provincia: String,
-    val ciudad: String,
+    val maxPeople: Int = 0,
+    val provincia: String = "",
+    val ciudad: String = "",
     @SerializedName("estadoActividad")
-    val activityStatus: String,
+    val activityStatus: String = "",
     @SerializedName("fechaCreacion")
-    val createdAt: String,
+    val createdAt: String? = null,
     @SerializedName("fechaActualizacion")
-    val updatedAt: String,
-    val galeria: List<GalleryImage>,
+    val updatedAt: String? = null,
+    val galeria: List<GalleryImage>? = null,
     @SerializedName("servicioEvento")
-    val services: List<ActivityService>,
+    val services: List<ActivityService>? = null,
 
 
     // Información del usuario (nuevos campos)
@@ -65,7 +65,7 @@ data class ActivityDetailsModel(
     val descripcionProveedor: String? = null,
 
     @SerializedName("cuentaBancaria")
-    val cuentaBancaria: String,
+    val cuentaBancaria: String = "",
 
 
     )
@@ -74,21 +74,21 @@ data class ActivityDetailsModel(
  * Modelo para las imágenes de la galería
  */
 data class GalleryImage(
-    val id: Int,
+    val id: Int = 0,
     @SerializedName("actividadId")
-    val activityId: Int,
+    val activityId: Int = 0,
     @SerializedName("urlFoto")
-    val urlFoto: String?,
+    val urlFoto: String? = null,
     @SerializedName("imagenBinaria")
-    val imageBinary: String?,
+    val imageBinary: String? = null,
     @SerializedName("nombreArchivo")
-    val fileName: String,
+    val fileName: String = "",
     @SerializedName("tipoContenido")
-    val contentType: String,
+    val contentType: String = "",
     @SerializedName("tamanoArchivo")
-    val fileSize: Long,
+    val fileSize: Long = 0L,
     @SerializedName("esImagenPrincipal")
-    val isPrimaryImage: Boolean
+    val isPrimaryImage: Boolean = false
 ){
     val displayImage: String?
         get() = if (!urlFoto.isNullOrEmpty())
@@ -100,9 +100,9 @@ data class GalleryImage(
  * Modelo para los servicios incluidos en la actividad
  */
 data class ActivityService(
-    val id: Int,
+    val id: Int = 0,
     @SerializedName("listaServicio")
-    val serviceName: String,
+    val serviceName: String = "",
     @SerializedName("actividadId")
-    val activityId: Int
+    val activityId: Int = 0
 )

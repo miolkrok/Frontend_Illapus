@@ -51,7 +51,7 @@ class ProfileViewModel : BaseViewModel() {
                         isLoading = false,
                         username = "${userInfo.nombre} ${userInfo.apellido}",
                         email = userInfo.email,
-                        location = userInfo.direccion ?: "Sin dirección especificada",
+                        location = userInfo.direccion ?: " ",
                         profileImageUrl = userInfo.imagenPerfil,
                         isProveedor = userInfo.roles.contains("PROVEEDOR"),
                         errorMessage = null

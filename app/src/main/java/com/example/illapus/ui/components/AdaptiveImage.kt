@@ -49,7 +49,16 @@ fun AdaptiveImage(
                 model = imageData,
                 contentDescription = contentDescription,
                 modifier = modifier,
-                contentScale = contentScale
+                contentScale = contentScale,
+                onError = {
+                    android.util.Log.e("AdaptiveImage", "Error cargando URL: $imageData", it.result.throwable)
+                },
+                onLoading = {
+                    android.util.Log.d("AdaptiveImage", "Cargando URL: $imageData")
+                },
+                onSuccess = {
+                    android.util.Log.d("AdaptiveImage", "Imagen cargada OK: $imageData")
+                }
             )
         }
         else -> {

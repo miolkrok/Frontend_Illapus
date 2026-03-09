@@ -68,7 +68,7 @@ fun ActivityCard(
                 // Imagen principal de la actividad
                 if (!activity.galeria.isNullOrEmpty()) {
                     val primaryImage =
-                        activity.galeria.find { it.isPrimaryImage } ?: activity.galeria.first()
+                        activity.galeria!!.find { it.isPrimaryImage } ?: activity.galeria!!.first()
                     AdaptiveImage(
                         imageData = primaryImage.displayImage,
                         contentDescription = activity.title,
