@@ -35,7 +35,8 @@ object TokenManager {
     fun saveAuthToken(token: String) {
         sharedPreferences?.edit()?.apply {
             putString(KEY_AUTH_TOKEN, token)
-            apply()
+            commit()
+            //apply()
         } ?: Log.e("TokenManager", "Error: TokenManager no inicializado")
     }
 
@@ -45,7 +46,8 @@ object TokenManager {
     fun saveRefreshToken(token: String) {
         sharedPreferences?.edit()?.apply {
             putString(KEY_REFRESH_TOKEN, token)
-            apply()
+            commit()
+            //apply()
         } ?: Log.e("TokenManager", "Error: TokenManager no inicializado")
     }
 
@@ -55,7 +57,8 @@ object TokenManager {
     fun saveTokenType(tokenType: String) {
         sharedPreferences?.edit()?.apply {
             putString(KEY_TOKEN_TYPE, tokenType)
-            apply()
+            commit()
+            //apply()
         } ?: Log.e("TokenManager", "Error: TokenManager no inicializado")
     }
 

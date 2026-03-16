@@ -49,6 +49,27 @@ object ApiClient {
             val token = TokenManager.getAuthToken()
             val tokenType = TokenManager.getTokenType() ?: "Bearer"
 
+            // Rutas públicas que NO necesitan token
+            val publicPaths = listOf("busquedas/simple", "busquedas/cache", "busquedas/filtros-avanzados", "auth/login", "auth/register")
+            val isPublicPath = publicPaths.any { original.url.encodedPath.contains(it) }
+
+            val requestBuilder: Request.Builder = if (!token.isNullOrEmpty() && !isPublicPath) {
+                Log.d("ApiClient", "Añadiendo token a: ${original.url.encodedPath}")
+                original.newBuilder()
+                    .header("Authorization", "$tokenType $token")
+            } else {
+                Log.d("ApiClient", "Sin token para ruta pública: ${original.url.encodedPath}")
+                original.newBuilder()
+            }
+
+            val request = requestBuilder.build()
+            chain.proceed(request)
+        }
+        /*val authInterceptor = Interceptor { chain ->
+            val original = chain.request()
+            val token = TokenManager.getAuthToken()
+            val tokenType = TokenManager.getTokenType() ?: "Bearer"
+
             // Si hay un token, lo añadimos a la cabecera de autorización
             val requestBuilder: Request.Builder = if (!token.isNullOrEmpty()) {
                 Log.d("ApiClient", "Añadiendo token de autenticación a la solicitud")
@@ -60,7 +81,7 @@ object ApiClient {
 
             val request = requestBuilder.build()
             chain.proceed(request)
-        }
+        }*/
 
         // Interceptor para manejar errores de autenticación
         val authErrorInterceptor = Interceptor { chain ->
