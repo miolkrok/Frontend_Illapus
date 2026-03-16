@@ -33,45 +33,6 @@ object ApiClient {
 
     private var _paymentService: PaymentService? = null
 
-    val authApiService: AuthApiService
-        get() {
-            if (_authApiService == null) {
-                _authApiService = retrofit.create(AuthApiService::class.java)
-            }
-            return _authApiService!!
-        }
-
-    val propertyService: PropertyApiService
-        get() {
-            if (_propertyService == null) {
-                _propertyService = retrofit.create(PropertyApiService::class.java)
-            }
-            return _propertyService!!
-        }
-
-    val activityService: ActivityApiService
-        get() {
-            if (_activityService == null) {
-                _activityService = retrofit.create(ActivityApiService::class.java)
-            }
-            return _activityService!!
-        }
-
-    val reservaService: ReserveApiService
-        get() {
-            if (_reserveService == null) {
-                _reserveService = retrofit.create(ReserveApiService::class.java)
-            }
-            return _reserveService!!
-        }
-
-    val searchService: SearchService
-        get() {
-            if (_searchService == null) {
-                _searchService = retrofit.create(SearchService::class.java)
-            }
-            return _searchService!!
-        }
 
     // Inicialización del cliente API
     fun initialize(context: Context) {
@@ -252,4 +213,43 @@ object ApiClient {
             return _paymentService!!
         }
 
+    val authApiService: AuthApiService
+        get() {
+            if (_authApiService == null) {
+                _authApiService = retrofit.create(AuthApiService::class.java)
+            }
+            return _authApiService!!
+        }
+
+    val propertyService: PropertyApiService
+        get() {
+            if (_propertyService == null) {
+                _propertyService = retrofit.create(PropertyApiService::class.java)
+            }
+            return _propertyService!!
+        }
+
+    val activityService: ActivityApiService
+        get() {
+            if (_activityService == null) {
+                _activityService = retrofit.create(ActivityApiService::class.java)
+            }
+            return _activityService!!
+        }
+
+    val reservaService: ReserveApiService
+        get() {
+            if (_reserveService == null) {
+                _reserveService = retrofit.create(ReserveApiService::class.java)
+            }
+            return _reserveService!!
+        }
+
+    val searchService: SearchService
+        get() {
+            if (_searchService == null) {
+                _searchService = retrofit.create(SearchService::class.java)
+            }
+            return _searchService!!
+        }
 }

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.illapus.data.model.ReserveCreationResponse
+import com.example.illapus.ui.components.PaymentStatusBadge
 import com.example.illapus.ui.components.ReservationCard
 import com.example.illapus.ui.viewmodel.ActivityViewModel
 import com.example.illapus.ui.viewmodel.ReservationsViewModel
@@ -210,8 +211,7 @@ private fun ReservationsList(
                     onNavigateToComments?.invoke(actividadId)
                 }
             ) {
-                // StatusChip
-                StatusChip(status = reservation.estado)
+                PaymentStatusBadge(estadoPago = reservation.estadoPago)
 
                 // Detalles de la reserva
                 ReservationDetailRow(

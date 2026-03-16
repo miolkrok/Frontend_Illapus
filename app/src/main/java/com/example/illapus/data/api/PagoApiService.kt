@@ -2,6 +2,7 @@ package com.example.illapus.data.api
 
 import com.example.illapus.data.model.PagoRequest
 import com.example.illapus.data.model.PagoResponse
+import com.example.illapus.ui.viewmodel.Payment
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -27,5 +28,8 @@ interface PagoApiService {
         @Path("id") id: Int,
         @Body body: Map<String, String>
     ): Response<Any>
+
+    @GET("pagos/anfitrion/{anfitrionId}")
+    suspend fun getHostPayments(@Path("anfitrionId") anfitrionId: Int): Response<List<Payment>>
 
 }

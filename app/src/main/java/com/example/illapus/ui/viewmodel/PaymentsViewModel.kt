@@ -28,7 +28,7 @@ class PaymentsViewModel : ViewModel() {
                 }
 
                 // Aquí llamas a tu API para obtener todos los pagos de las actividades del anfitrión
-                val response = ApiClient.paymentService.getHostPayments(userId)
+                val response = ApiClient.pagoService.getHostPayments(userId)
 
                 if (response.isSuccessful) {
                     _uiState.value = _uiState.value.copy(
@@ -55,11 +55,32 @@ class PaymentsViewModel : ViewModel() {
      */
     fun updatePaymentStatus(paymentId: Int, newStatus: String) {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
             try {
-                val response = ApiClient.pagoService.updatePagoEstado(paymentId, mapOf("estado" to newStatus))
+                val response = ApiClient.pagoService.updatePagoEstado(
+                    paymentId,
+                    mapOf("estado" to newStatus)
+                )
                 if (response.isSuccessful) {
-                    // Recargar pagos para reflejar el cambio
-                    loadAllHostPayments()
+                    val currentPayments = _uiState.value.payments.toMutableList()
+                    val index = currentPayments.indexOfFirst { it.id == paymentId }
+                    if (index != -1) {
+                        val updatedPayment = currentPayments[index].copy(
+                            estado = newStatus,
+                            estadoPago = newStatus
+                        )
+                        currentPayments[index] = updatedPayment
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            payments = currentPayments,
+                            error = null
+                        )
+                    }
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Error al actualizar estado: ${response.message()}"
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(

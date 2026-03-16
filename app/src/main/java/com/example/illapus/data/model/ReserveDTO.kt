@@ -7,6 +7,7 @@ data class ReserveDTO(
     val actividadId: Int,
     val usuarioId: Int,
     val estado: String = "PENDIENTE",
+    val estadoPago: String? = "PENDIENTE",
     val fechaReserva: String, // ISO 8601 format
     val fechaActividad: String, // ISO 8601 format
     val cantidadPersonas: Int,
@@ -22,6 +23,7 @@ data class ReserveCreationResponse(
     val usuarioId: Int,
     val estado: String,
     val fechaReserva: String,
+    val estadoPago: String?,
     val fechaActividad: String,
     val cantidadPersonas: Int,
     val costoTotal: BigDecimal,

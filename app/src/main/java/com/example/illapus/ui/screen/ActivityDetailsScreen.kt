@@ -96,6 +96,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.material.icons.filled.ContentCopy
 import com.example.illapus.utils.TokenManager
+import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -700,7 +701,15 @@ fun ActivityDetailsScreen(
                         }
                     }
 
-                    val currentUserId = TokenManager.getUserId()
+                    var currentUserId by remember { mutableStateOf(-1) }
+
+                    LaunchedEffect(Unit) {
+                        // Dar tiempo a que TokenManager se inicialice
+                        kotlinx.coroutines.delay(100)
+                        currentUserId = TokenManager.getUserId()
+                        Log.d("ActivityDetailsScreen", "currentUserId cargado: $currentUserId")
+                    }
+
                     val isOwner = currentUserId == details.providerId
 
                     Surface(

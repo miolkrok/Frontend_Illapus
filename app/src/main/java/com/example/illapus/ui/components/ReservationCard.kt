@@ -37,6 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.illapus.data.model.ReserveCreationResponse
 import com.example.illapus.ui.theme.White
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Surface
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun ReservationCard(
@@ -166,3 +169,21 @@ fun ReservationCard(
     }
 }
 
+@Composable
+fun PaymentStatusBadge(estadoPago: String?) {
+    val estado = estadoPago ?: "PENDIENTE"
+    val (bg, fg) = when (estado.uppercase()) {
+        "APROBADO"  -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
+        "RECHAZADO" -> Color(0xFFFFEBEE) to Color(0xFFC62828)
+        else        -> Color(0xFFFFF3E0) to Color(0xFFE65100)
+    }
+    Surface(shape = RoundedCornerShape(12.dp), color = bg) {
+        Text(
+            text = "Pago: ${estado.uppercase()}",
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            color = fg,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp
+        )
+    }
+}

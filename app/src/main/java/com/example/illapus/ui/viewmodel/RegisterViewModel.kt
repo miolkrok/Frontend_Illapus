@@ -98,6 +98,17 @@ class RegisterViewModel(
             ).onSuccess { response ->
                 Log.d("RegisterViewModel", "Registro exitoso: $response")
 
+                response.id?.let { userId ->
+                    com.example.illapus.utils.TokenManager.saveUserId(userId)
+                    Log.d("RegisterViewModel", "✅ UserId guardado desde registro: $userId")
+
+                    val savedId = com.example.illapus.utils.TokenManager.getUserId()
+                    Log.d("RegisterViewModel", "✅ VERIFICACIÓN - TokenManager.getUserId() = $savedId")
+
+                } ?: run {
+                    Log.e("RegisterViewModel", "❌ ERROR: response.id es NULL")
+                }
+
                 // Después de registrar exitosamente, intentar iniciar sesión automáticamente
                 autoLoginAfterRegistration()
 
@@ -121,8 +132,23 @@ class RegisterViewModel(
                 val password = _uiState.value.password
 
                 authRepository.login(email, password)
-                    .onSuccess {
+                    .onSuccess { loginResponse ->
                         Log.d("RegisterViewModel", "Inicio de sesión automático exitoso")
+                        Log.d("RegisterViewModel", "Login response - usuario.id: ${loginResponse.usuario.id}")
+
+                        loginResponse.usuario.id.let { userId ->
+                            com.example.illapus.utils.TokenManager.saveUserId(userId)
+                            Log.d("RegisterViewModel", "✅ UserId guardado desde login: $userId")
+
+                            // ★★★ VERIFICACIÓN ★★★
+                            val savedId = com.example.illapus.utils.TokenManager.getUserId()
+                            Log.d("RegisterViewModel", "✅ VERIFICACIÓN después de login = $savedId")
+                        }
+
+                        loginResponse.usuario.rol.let { role ->
+                            com.example.illapus.utils.TokenManager.saveUserRole(role)
+                            Log.d("RegisterViewModel", "✅ Rol guardado: $role")
+                        }
                         _uiState.update {
                             it.copy(
                                 isLoading = false,

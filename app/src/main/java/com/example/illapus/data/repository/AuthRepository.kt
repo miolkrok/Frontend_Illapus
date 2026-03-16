@@ -22,6 +22,11 @@ class AuthRepository {
             TokenManager.saveRefreshToken(response.refreshToken)
             TokenManager.saveTokenType(response.tokenType)
 
+            TokenManager.saveUserId(response.usuario.id)
+            TokenManager.saveUserRole(response.usuario.rol)
+
+            Log.d("AuthRepository", "✅ UserId guardado en TokenManager: ${response.usuario.id}")
+
             Result.success(response)
         } catch (e: HttpException) {
             // Captura específicamente errores HTTP para logear más información
@@ -55,6 +60,14 @@ class AuthRepository {
                 )
             )
             Log.d("AuthRepository", "Respuesta de API recibida: $response")
+
+            response.id?.let { userId ->
+                TokenManager.saveUserId(userId)
+                Log.d("AuthRepository", "UserId guardado desde registro: $userId")
+            } ?: run {
+                Log.e("AuthRepository", "ERROR: response.id es NULL")
+            }
+
             Result.success(response)
         } catch (e: HttpException) {
             // Captura específicamente errores HTTP para logear más información

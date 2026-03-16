@@ -123,6 +123,10 @@ class ProfileViewModel : BaseViewModel() {
 
                 if (response.isSuccessful) {
                     Log.d("ProfileViewModel", "Usuario convertido a PROVEEDOR exitosamente")
+
+                    TokenManager.saveUserRole("PROVEEDOR")
+                    Log.d("ProfileViewModel", "Rol actualizado en TokenManager: PROVEEDOR")
+
                     _uiState.update {
                         it.copy(
                             isConvertingToProveedor = false,

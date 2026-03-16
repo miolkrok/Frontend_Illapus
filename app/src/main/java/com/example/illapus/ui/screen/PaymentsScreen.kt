@@ -139,7 +139,10 @@ fun PaymentsScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(uiState.payments) { payment ->
+                        items(uiState.payments.filter { payment ->
+                            val estado = payment.estado ?: payment.estadoPago ?: "PENDIENTE"
+                            estado == "PENDIENTE"  // Solo mostrar pendientes
+                        }) { payment ->
                             PaymentDetailCard(
                                 payment = payment,
                                 onStatusChanged = { id, newStatus ->

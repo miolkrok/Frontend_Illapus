@@ -591,6 +591,8 @@ class ActivityDetailsViewModel : BaseViewModel() {
             val date = _selectedReservationDate.value
             val comprobanteBase64 = _comprobanteBase64.value
 
+
+
             if (activity == null) {
                 _error.value = "Actividad no válida"
                 _isCreatingReservation.value = false
@@ -609,7 +611,17 @@ class ActivityDetailsViewModel : BaseViewModel() {
                 return@launch
             }
 
+            Log.d("RESERVA_DEBUG", "=== INICIANDO RESERVA ===")
+            Log.d("RESERVA_DEBUG", "Actividad: ${activity?.id}")
+            Log.d("RESERVA_DEBUG", "Fecha: $date")
+            Log.d("RESERVA_DEBUG", "Comprobante Base64: ${comprobanteBase64?.substring(0, Math.min(50, comprobanteBase64?.length ?: 0))}...")
+            Log.d("RESERVA_DEBUG", "Cantidad personas: ${_guestCount.value}")
+            Log.d("RESERVA_DEBUG", "Precio total: ${_totalPrice.value}")
+
+
             val userId = TokenManager.getUserId()
+            Log.d("RESERVA_DEBUG", "UserId de TokenManager: $userId")
+
             if (userId <= 0) {
                 _error.value = "Usuario no válido. Por favor inicia sesión nuevamente"
                 _isCreatingReservation.value = false

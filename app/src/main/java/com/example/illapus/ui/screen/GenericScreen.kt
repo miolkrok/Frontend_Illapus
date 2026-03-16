@@ -1,5 +1,6 @@
 package com.example.illapus.ui.screen
 
+import java.time.LocalDate
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -647,42 +648,22 @@ fun DetailsContent(
         }
 
         item {
-            // Variables para campos separados - parsear del string guardado
-            var banco by remember {
-                mutableStateOf(
-                    cuentaBancaria.lines().find { it.startsWith("Banco:") }
-                        ?.removePrefix("Banco:")?.trim() ?: ""
-                )
-            }
-            var nombreTitular by remember {
-                mutableStateOf(
-                    cuentaBancaria.lines().find { it.startsWith("Titular:") }
-                        ?.removePrefix("Titular:")?.trim() ?: ""
-                )
-            }
-            var cedula by remember {
-                mutableStateOf(
-                    cuentaBancaria.lines().find { it.startsWith("Cédula:") }
-                        ?.removePrefix("Cédula:")?.trim() ?: ""
-                )
-            }
-            var numeroCuenta by remember {
-                mutableStateOf(
-                    cuentaBancaria.lines().find { it.startsWith("Cuenta:") }
-                        ?.removePrefix("Cuenta:")?.trim() ?: ""
-                )
-            }
+            var editandoPago by remember { mutableStateOf(false) }
+            var textoPago by remember { mutableStateOf("") }
 
-            // Función para concatenar y guardar
-            fun actualizarCuentaBancaria() {
-                val datos = buildString {
-                    if (banco.isNotBlank()) appendLine("Banco: $banco")
-                    if (nombreTitular.isNotBlank()) appendLine("Titular: $nombreTitular")
-                    if (cedula.isNotBlank()) appendLine("Cédula: $cedula")
-                    if (numeroCuenta.isNotBlank()) appendLine("Cuenta: $numeroCuenta")
-                }.trim()
-                cuentaBancaria = datos
-                onUpdateCuentaBancaria(datos)
+            // Inicializar desde cuentaBancaria
+            LaunchedEffect(activityData.cuentaBancaria) {
+                if (activityData.cuentaBancaria.isNotEmpty()) {
+                    textoPago = activityData.cuentaBancaria
+                } else {
+                    // Valores por defecto como en la imagen
+                    textoPago = buildString {
+                        appendLine("Banco del pacífico")
+                        appendLine("Nombre: Luis Ortiz")
+                        appendLine("C.I. 1718496944")
+                        append("Cuenta: 2204456968")
+                    }
+                }
             }
 
             Card(
@@ -695,7 +676,7 @@ fun DetailsContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text = "Datos para recibir pagos",
@@ -704,91 +685,113 @@ fun DetailsContent(
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Banco
-                    OutlinedTextField(
-                        value = banco,
-                        onValueChange = {
-                            banco = it
-                            actualizarCuentaBancaria()
-                        },
-                        label = { Text("Banco") },
-                        placeholder = { Text("Ej: Banco Pichincha") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                    if (editandoPago) {
+                        // MODO EDICIÓN - Un solo campo de texto multilínea
+                        OutlinedTextField(
+                            value = textoPago,
+                            onValueChange = { textoPago = it },
+                            label = { Text("Datos bancarios") },
+                            placeholder = {
+                                Text("Ej:\nBanco Pichincha\nNombre: Juan Pérez\nC.I. 1234567890\nCuenta: 123456789")
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 150.dp),
+                            minLines = 5,
+                            maxLines = 10
+                        )
 
-                    // Nombre del titular
-                    OutlinedTextField(
-                        value = nombreTitular,
-                        onValueChange = {
-                            nombreTitular = it
-                            actualizarCuentaBancaria()
-                        },
-                        label = { Text("Nombre del titular") },
-                        placeholder = { Text("Ej: Juan Pérez") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    editandoPago = false
+                                    // Restaurar valor original
+                                    if (activityData.cuentaBancaria.isNotEmpty()) {
+                                        textoPago = activityData.cuentaBancaria
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Cancelar")
+                            }
 
-                    // Cédula
-                    OutlinedTextField(
-                        value = cedula,
-                        onValueChange = {
-                            cedula = it
-                            actualizarCuentaBancaria()
-                        },
-                        label = { Text("Cédula / RUC") },
-                        placeholder = { Text("Ej: 1712345678") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
+                            Button(
+                                onClick = {
+                                    editandoPago = false
+                                    onUpdateCuentaBancaria(textoPago)
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Mantener datos")
+                            }
+                        }
+                    } else {
+                        // MODO VISUALIZACIÓN - Mostrar como texto simple
+                        Text(
+                            text = textoPago,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
 
-                    // Número de cuenta
-                    OutlinedTextField(
-                        value = numeroCuenta,
-                        onValueChange = {
-                            numeroCuenta = it
-                            actualizarCuentaBancaria()
-                        },
-                        label = { Text("Número de cuenta") },
-                        placeholder = { Text("Ej: 2201234567") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
+                        // Botón para editar
+                        TextButton(
+                            onClick = { editandoPago = true },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text("Editar datos de pago")
+                        }
 
-                    Text(
-                        text = "Los clientes verán estos datos para realizar el depósito",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                        Text(
+                            text = "Los clientes verán estos datos para realizar el depósito",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
                 }
             }
         }
+
     }
 
     // Date Picker Dialog para fecha de inicio
     if (showDatePickerInicio) {
+        val today = LocalDate.now()
+
         DatePickerDialog(
             onDateSelected = { selectedDate ->
                 fechaInicio = selectedDate
                 onUpdateAvailability(diasSeleccionados, fechaInicio, fechaFin)
                 showDatePickerInicio = false
             },
-            onDismiss = { showDatePickerInicio = false }
+            onDismiss = { showDatePickerInicio = false },
+            minDate = today,
+            maxDate = null
         )
     }
 
     // Date Picker Dialog para fecha de fin
     if (showDatePickerFin) {
+        val today = LocalDate.now()
+        val minDate = if (fechaInicio.isNotBlank()) {
+            LocalDate.parse(fechaInicio)
+        } else {
+            today
+        }
+
         DatePickerDialog(
             onDateSelected = { selectedDate ->
                 fechaFin = selectedDate
                 onUpdateAvailability(diasSeleccionados, fechaInicio, fechaFin)
                 showDatePickerFin = false
             },
-            onDismiss = { showDatePickerFin = false }
+            onDismiss = { showDatePickerFin = false },
+            minDate = minDate,
+            maxDate = null
         )
     }
 }
@@ -1039,9 +1042,37 @@ fun getStepTitle(step: ActivityCreationStep): String {
 @Composable
 fun DatePickerDialog(
     onDateSelected: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    initialDateMillis: Long? = null,
+    minDate: LocalDate? = null,
+    maxDate: LocalDate? = null
 ) {
-    val datePickerState = rememberDatePickerState()
+
+    val today = LocalDate.now().toEpochDay() * 24 * 60 * 60 * 1000
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialDateMillis ?: System.currentTimeMillis(),
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                // No permitir fechas pasadas (antes de hoy)
+                if (utcTimeMillis < today) return false
+
+                // Si hay fecha mínima, validar
+                minDate?.let {
+                    val minMillis = it.toEpochDay() * 24 * 60 * 60 * 1000
+                    if (utcTimeMillis < minMillis) return false
+                }
+
+                // Si hay fecha máxima, validar
+                maxDate?.let {
+                    val maxMillis = it.toEpochDay() * 24 * 60 * 60 * 1000
+                    if (utcTimeMillis > maxMillis) return false
+                }
+
+                return true
+            }
+        }
+    )
 
     DatePickerDialog(
         onDismissRequest = onDismiss,
@@ -1053,7 +1084,9 @@ fun DatePickerDialog(
                         .toLocalDate()
                     onDateSelected(date.toString())
                 }
-            }) {
+            },
+                enabled = datePickerState.selectedDateMillis != null
+            ) {
                 Text("OK")
             }
         },
@@ -1063,6 +1096,15 @@ fun DatePickerDialog(
             }
         }
     ) {
-        DatePicker(state = datePickerState)
+        DatePicker(
+            state = datePickerState,
+            showModeToggle = false,
+            title = {
+                Text(
+                    text = "Seleccionar fecha",
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        )
     }
 }

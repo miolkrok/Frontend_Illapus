@@ -17,8 +17,8 @@ class LoginViewModel(
 ) : ViewModel() {
 
     data class LoginUiState(
-        val email: String = "admin3@admin.com",
-        val password: String = "Password123*",
+        val email: String = "",//"admin3@admin.com",
+        val password: String = "",//"Password123*",
         val isLoading: Boolean = false,
         val errorMessage: String? = null,
         val isLoggedIn: Boolean = false,

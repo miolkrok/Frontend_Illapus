@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -59,7 +60,16 @@ object AppDestinations {
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
-    var isHostMode by remember { mutableStateOf(false) }
+    val currentUserRole by remember { mutableStateOf(TokenManager.getUserRole()) }
+    var isHostMode by remember { mutableStateOf(currentUserRole == "PROVEEDOR") }
+
+    // actualiza cuando cambia el rol
+    LaunchedEffect(Unit) {
+        // Esto se ejecutará cuando el rol cambie (después de convertirse en proveedor)
+        snapshotFlow { TokenManager.getUserRole() }.collect { newRole ->
+            isHostMode = newRole == "PROVEEDOR"
+        }
+    }
 
     // Crear el TripsViewModel una sola vez a nivel de navegación
     val activitiesViewModel: ActivityViewModel = viewModel()
