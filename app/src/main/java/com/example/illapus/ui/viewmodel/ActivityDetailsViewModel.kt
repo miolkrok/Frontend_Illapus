@@ -300,7 +300,9 @@ class ActivityDetailsViewModel : BaseViewModel() {
             minPeople = activity.minPeople,
             maxPeople = activity.maxPeople,
             services = services,
-            cuentaBancaria = activity.cuentaBancaria
+            cuentaBancaria = activity.cuentaBancaria,
+            startDate = activity.startDate,
+            endDate = activity.endDate
         )
     }
 

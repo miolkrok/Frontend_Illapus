@@ -1016,23 +1016,36 @@ fun ActivityDetailsScreen(
                 // DatePicker
                 if (showDatePicker) {
                     val today = LocalDate.now().toEpochDay() * 24 * 60 * 60 * 1000
+
+                    // Parsear fechas de inicio y fin de la actividad
+                    val activityStartDate = activityDetails?.startDate?.let {
+                        try { LocalDate.parse(it) } catch (e: Exception) { null }
+                    }
+                    val activityEndDate = activityDetails?.endDate?.let {
+                        try { LocalDate.parse(it) } catch (e: Exception) { null }
+                    }
+
                     val datePickerState = rememberDatePickerState(
                         initialSelectedDateMillis = selectedDate?.toEpochDay()
                             ?.times(24 * 60 * 60 * 1000)
                             ?: System.currentTimeMillis(),
                         selectableDates = object : androidx.compose.material3.SelectableDates {
                             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                                // No permitir fechas pasadas
+                                // 1. No permitir fechas pasadas
                                 if (utcTimeMillis < today) return false
 
-                                // Solo permitir días de la semana que están en disponibilidad
                                 val date = LocalDate.ofEpochDay(utcTimeMillis / (24 * 60 * 60 * 1000))
+
+                                // 2. Validar que esté dentro del rango de fechas de la actividad
+                                if (activityStartDate != null && date.isBefore(activityStartDate)) return false
+                                if (activityEndDate != null && date.isAfter(activityEndDate)) return false
+
+                                // 3. Solo permitir días de la semana que están en disponibilidad
                                 val dayName = date.dayOfWeek.getDisplayName(
                                     java.time.format.TextStyle.FULL,
                                     Locale("es", "ES")
                                 ).replaceFirstChar { it.uppercase() }
 
-                                // Verificar si el día está en la disponibilidad de la actividad
                                 val disponibilidad = activityDetails?.availability ?: ""
                                 return disponibilidad.contains(dayName, ignoreCase = true)
                             }

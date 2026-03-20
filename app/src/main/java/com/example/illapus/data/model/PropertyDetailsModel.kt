@@ -34,7 +34,9 @@ data class PropertyDetailsModel(
     val difficultyLevel: String,
     val minPeople: Int,
     val maxPeople: Int,
-    val services: List<String> // Lista de servicios incluidos
+    val services: List<String>, // Lista de servicios incluidos
+    val startDate: String? = null,
+    val endDate: String? = null
 )
 
 /**
