@@ -60,8 +60,8 @@ object AppDestinations {
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
-    val currentUserRole by remember { mutableStateOf(TokenManager.getUserRole()) }
-    var isHostMode by remember { mutableStateOf(currentUserRole == "PROVEEDOR") }
+    //val currentUserRole by remember { mutableStateOf(TokenManager.getUserRole()) }
+    var isHostMode by remember { mutableStateOf(TokenManager.getUserRole() == "PROVEEDOR") }
 
     // actualiza cuando cambia el rol
     LaunchedEffect(Unit) {
@@ -167,14 +167,19 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 SplashScreen(
                     navController = navController,
                     onSplashFinished = {
-                        // Verificar si el usuario ya está logueado
                         if (TokenManager.isLoggedIn()) {
-                            // Si ya está logueado, ir directamente a la pantalla principal
-                            navController.navigate(NavigationItems.Activities.route) {
+                            val role = TokenManager.getUserRole()
+                            isHostMode = role == "PROVEEDOR"
+
+                            val startRoute = if (role == "PROVEEDOR") {
+                                NavigationItems.Host.route
+                            } else {
+                                NavigationItems.Activities.route
+                            }
+                            navController.navigate(startRoute) {
                                 popUpTo(AppDestinations.SPLASH_ROUTE) { inclusive = true }
                             }
                         } else {
-                            // Si no está logueado, ir al login
                             navController.navigate(AppDestinations.LOGIN_ROUTE) {
                                 popUpTo(AppDestinations.SPLASH_ROUTE) { inclusive = true }
                             }
@@ -187,9 +192,17 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             composable(AppDestinations.LOGIN_ROUTE) {
                 LoginScreen(
                     onLoginSuccess = {
-                        // Cuando el login es exitoso, navegar a la pantalla principal
-                        navController.navigate(NavigationItems.Activities.route) {
-                            // Limpiar el back stack para que el usuario no pueda volver a la pantalla de login
+                        // Actualizar isHostMode con el rol recién guardado
+                        val role = TokenManager.getUserRole()
+                        isHostMode = role == "PROVEEDOR"
+
+                        // Navegar a la pantalla correcta según el rol
+                        val startRoute = if (role == "PROVEEDOR") {
+                            NavigationItems.Host.route
+                        } else {
+                            NavigationItems.Activities.route
+                        }
+                        navController.navigate(startRoute) {
                             popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
                         }
                     },
@@ -204,9 +217,15 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             composable(AppDestinations.REGISTER_ROUTE) {
                 RegisterScreen(
                     onRegisterSuccess = {
-                        // Cuando el registro es exitoso, navegar a la pantalla principal
-                        navController.navigate(NavigationItems.Activities.route) {
-                            // Limpiar el back stack para que el usuario no pueda volver a las pantallas anteriores
+                        val role = TokenManager.getUserRole()
+                        isHostMode = role == "PROVEEDOR"
+
+                        val startRoute = if (role == "PROVEEDOR") {
+                            NavigationItems.Host.route
+                        } else {
+                            NavigationItems.Activities.route
+                        }
+                        navController.navigate(startRoute) {
                             popUpTo(0) { inclusive = true }
                         }
                     },
